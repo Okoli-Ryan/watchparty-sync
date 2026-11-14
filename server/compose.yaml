@@ -1,0 +1,16 @@
+# Local development database only: `docker compose up -d`, then `dotnet run --project src/WatchParty.Api`.
+# Same Postgres major version as Neon. Production uses Neon; see README.md.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: watchparty
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - watchparty-postgres:/var/lib/postgresql/data
+
+volumes:
+  watchparty-postgres:

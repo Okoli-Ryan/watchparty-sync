@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pure C#: the BCL only. Architecture tests keep it that way. -->
+</Project>

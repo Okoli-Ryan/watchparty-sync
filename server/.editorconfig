@@ -1,0 +1,71 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,xml,csproj,props,toml,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+# Layout
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_prefer_braces = when_multiline:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+
+# Naming: _camelCase private fields
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+
+# Private constants and static readonly fields are PascalCase, not _camelCase.
+dotnet_naming_rule.private_constants_pascal.symbols = private_constants
+dotnet_naming_rule.private_constants_pascal.style = pascal
+dotnet_naming_rule.private_constants_pascal.severity = warning
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly
+dotnet_naming_rule.private_static_readonly_pascal.style = pascal
+dotnet_naming_rule.private_static_readonly_pascal.severity = warning
+dotnet_naming_symbols.private_static_readonly.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly.required_modifiers = static, readonly
+dotnet_naming_style.pascal.capitalization = pascal_case
+
+# ASP.NET Core has no SynchronizationContext; ConfigureAwait(false) is noise here.
+dotnet_diagnostic.CA2007.severity = none
+# Public types in an application (not a library) are fine.
+dotnet_diagnostic.CA1515.severity = none
+
+[tests/**.cs]
+# Test method names use Method_Scenario_ExpectedResult (§10).
+dotnet_diagnostic.CA1707.severity = none
+# Tests build fixed literals and URIs inline.
+dotnet_diagnostic.CA2234.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA2000.severity = none
+
+[src/**.cs]
+# `Error` is the guidelines' own name for the domain error type (§3.1). It clashes
+# only with a VB keyword, and nothing here is consumed from VB.
+dotnet_diagnostic.CA1716.severity = none
+# "IDomainEventHandler" is the standard DDD name; the rule targets .NET event delegates.
+dotnet_diagnostic.CA1711.severity = none
+
+[src/WatchParty.Infrastructure/Persistence/Migrations/**.cs]
+# Written by `dotnet ef migrations add`; regenerated, never hand-edited, so not analysed.
+generated_code = true
