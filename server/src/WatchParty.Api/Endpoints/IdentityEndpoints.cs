@@ -3,9 +3,9 @@ using WatchParty.Api.Auth;
 using WatchParty.Api.Contracts;
 using WatchParty.Api.Errors;
 using WatchParty.Application.Abstractions.Messaging;
-using WatchParty.Application.Identity.CreateUser;
 using WatchParty.Application.Identity.Login;
 using WatchParty.Application.Identity.Queries;
+using WatchParty.Application.Identity.SignUp;
 using WatchParty.Domain.SharedKernel;
 
 namespace WatchParty.Api.Endpoints;
@@ -23,9 +23,10 @@ public static class IdentityEndpoints
 
         api.MapGet("/me", GetMeAsync).WithName("GetMe");
 
-        api.MapPost("/users", CreateUserAsync)
-            .RequireAuthorization(Policies.Admin)
-            .WithName("CreateUser");
+        api.MapPost("/auth/register", SignUpAsync)
+            .AllowAnonymous()
+            .RequireRateLimiting(Policies.LoginRateLimit)
+            .WithName("SignUp");
 
         return api;
     }
@@ -45,16 +46,14 @@ public static class IdentityEndpoints
         CancellationToken cancellationToken) =>
         await users.GetProfileAsync(user.UserId(), cancellationToken) is { } profile ? TypedResults.Ok(profile) : TypedResults.NotFound();
 
-    private static async Task<Results<Created<UserProfileDto>, ProblemHttpResult>> CreateUserAsync(
-        CreateUserRequest request,
-        System.Security.Claims.ClaimsPrincipal user,
-        ICommandHandler<CreateUserCommand, Result<UserProfileDto>> handler,
+    private static async Task<Results<Created<LoginResult>, ProblemHttpResult>> SignUpAsync(
+        SignUpRequest request,
+        ICommandHandler<SignUpCommand, Result<LoginResult>> handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(
-            new CreateUserCommand(user.UserId(), request.Email, request.Password, request.DisplayName, request.Role), cancellationToken);
-        return result.Match<Results<Created<UserProfileDto>, ProblemHttpResult>>(
-            profile => TypedResults.Created($"/api/v1/users/{profile.Uid}", profile),
+        var result = await handler.HandleAsync(new SignUpCommand(request.Email, request.DisplayName, request.Password), cancellationToken);
+        return result.Match<Results<Created<LoginResult>, ProblemHttpResult>>(
+            loginResult => TypedResults.Created("/api/v1/me", loginResult),
             error => error.ToProblem());
     }
 }

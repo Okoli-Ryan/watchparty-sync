@@ -1,0 +1,12 @@
+# Never send these to the Docker daemon.
+**/bin
+**/obj
+**/TestResults
+tests
+deploy
+.vs
+.git
+*.md
+Dockerfile
+.dockerignore
+compose.yaml

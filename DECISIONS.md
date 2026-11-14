@@ -550,16 +550,19 @@ Identity's `PasswordHasher` and returns a signed JWT (7 days by default). The
 extension keeps it in `chrome.storage.local`, shared by the popup, dashboard and
 service worker; the web dashboard keeps it in `localStorage`. SignalR sends it in
 the query string, which the API accepts on the hub path only. Accounts are
-created by the server, by an admin, or by the `seed-admin` console command for
-the first one.
+created by self-service sign-up (`POST /auth/register`: name, e-mail, password),
+which also returns a token, so the client is signed in at once. Sign-up only
+ever creates an ordinary user.
 
 **Why.** Entry 2's shared IndexedDB session and entry 5's throwaway secondary
 app both existed to work around Firebase Auth. A token in extension storage is
 shared by every extension context and announced to all of them through
-`storage.onChanged`. Creating accounts server-side never touches the admin's own
-session, and `CreateUserHandler` re-checks that the caller is still an admin
-rather than trusting the token's role claim.
+`storage.onChanged`. Sign-up returns the same payload as login, so the client
+needs one call and no admin account has to be bootstrapped from the console.
 
 **Cost.** There is no refresh token, and no revocation short of rotating the
 signing key. Unknown e-mail addresses are checked against a decoy hash, so a
-failed login takes the same time whether or not the account exists.
+failed login takes the same time whether or not the account exists. Sign-up is open
+to anyone who can reach the API, so it reports a taken e-mail (409) and so reveals
+which addresses have accounts; it is rate-limited per address like login, and
+there is no e-mail verification yet.

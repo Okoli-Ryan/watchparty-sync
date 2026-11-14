@@ -7,7 +7,6 @@ import { Login } from './views/Login';
 import { RoomList } from './views/RoomList';
 import { CreateRoom } from './views/CreateRoom';
 import { RoomView } from './views/RoomView';
-import { AdminUsers } from './views/AdminUsers';
 
 type Profile = UserProfile | null | undefined; // undefined = loading
 
@@ -21,7 +20,6 @@ export function App() {
   const [profile, setProfile] = useState<Profile>(undefined);
   const [attachRoomId, setAttachRoomId] = useState<string | null>(null);
   const [pendingPick, setPendingPick] = useState<PendingPick | null>(null);
-  const [tab, setTab] = useState<'rooms' | 'users'>('rooms');
 
   const refresh = useCallback(async () => {
     const [state, pick] = await Promise.all([
@@ -100,18 +98,7 @@ export function App() {
         </button>
       </div>
 
-      {profile.role === 'admin' && (
-        <div className="tabs">
-          <button className={tab === 'rooms' ? 'active' : ''} onClick={() => setTab('rooms')}>
-            Rooms
-          </button>
-          <button className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>
-            Users
-          </button>
-        </div>
-      )}
-
-      {tab === 'users' && profile.role === 'admin' ? <AdminUsers /> : <RoomList me={profile} />}
+      <RoomList me={profile} />
     </div>
   );
 }

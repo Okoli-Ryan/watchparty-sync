@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace WatchParty.Application.Identity.CreateUser;
+namespace WatchParty.Application.Identity.SignUp;
 
 internal static class PasswordRules
 {

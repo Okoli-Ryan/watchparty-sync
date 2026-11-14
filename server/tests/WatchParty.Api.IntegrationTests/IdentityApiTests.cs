@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using WatchParty.Api.IntegrationTests.Infrastructure;
 using WatchParty.Application.Identity.Login;
 using WatchParty.Application.Identity.Queries;
-using WatchParty.Domain.Identity;
 
 namespace WatchParty.Api.IntegrationTests;
 
@@ -34,12 +33,12 @@ public sealed class IdentityApiTests(WatchPartyApiFactory factory) : IClassFixtu
     public async Task Login_WithCorrectPassword_ReturnsATokenThatWorks()
     {
         var email = $"login.{Guid.NewGuid():N}@example.com";
-        await factory.CreateAccountAsync(email, "Login Tester", Role.User);
+        await factory.CreateAccountAsync(email, "Login Tester");
         using var anonymous = factory.CreateClient();
 
         var loginResponse = await anonymous.PostAsJsonAsync(
             "/api/v1/auth/login",
-            new { email = email.ToUpperInvariant(), password = WatchPartyApiFactory.AdminPassword });
+            new { email = email.ToUpperInvariant(), password = WatchPartyApiFactory.Password });
 
         loginResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var login = await loginResponse.Content.ReadFromJsonAsync<LoginResult>();
@@ -55,7 +54,7 @@ public sealed class IdentityApiTests(WatchPartyApiFactory factory) : IClassFixtu
     public async Task Login_WithWrongPassword_IsUnauthorizedProblemDetails()
     {
         var email = $"wrong.{Guid.NewGuid():N}@example.com";
-        await factory.CreateAccountAsync(email, "Wrong Password", Role.User);
+        await factory.CreateAccountAsync(email, "Wrong Password");
         using var anonymous = factory.CreateClient();
 
         var response = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "not the password" });
@@ -65,47 +64,74 @@ public sealed class IdentityApiTests(WatchPartyApiFactory factory) : IClassFixtu
     }
 
     [Fact]
-    public async Task CreateUser_ByOrdinaryUser_IsForbidden()
+    public async Task SignUp_CreatesAnOrdinaryUserAndReturnsAWorkingToken()
     {
-        using var user = await factory.SignInAsNewUserAsync("Ordinary");
+        var email = $"New.{Guid.NewGuid():N}@Example.com";
+        using var anonymous = factory.CreateClient();
 
-        var response = await user.Http.PostAsJsonAsync("/api/v1/users", NewAccount("someone@example.com"));
+        var response = await anonymous.PostAsJsonAsync("/api/v1/auth/register", NewAccount(email));
 
-        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var signUp = await response.Content.ReadFromJsonAsync<LoginResult>();
+        signUp!.User.Role.ShouldBe("user");
+        signUp.User.DisplayName.ShouldBe("New Person");
+        signUp.User.Email.ShouldBe(email.ToLowerInvariant());
+
+        anonymous.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signUp.AccessToken);
+        (await anonymous.GetAsync("/api/v1/me")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // And the same credentials sign in afterwards.
+        using var second = factory.CreateClient();
+        var login = await second.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "a long enough password" });
+        login.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task CreateUser_ByAdmin_CreatesTheAccountOnce()
+    public async Task SignUp_WithATakenEmail_IsConflict()
     {
-        using var admin = await factory.SignInAsNewUserAsync("Admin", Role.Admin);
-        var email = $"new.{Guid.NewGuid():N}@example.com";
+        var email = $"taken.{Guid.NewGuid():N}@example.com";
+        using var anonymous = factory.CreateClient();
 
-        var first = await admin.Http.PostAsJsonAsync("/api/v1/users", NewAccount(email));
-        var duplicate = await admin.Http.PostAsJsonAsync("/api/v1/users", NewAccount(email));
+        var first = await anonymous.PostAsJsonAsync("/api/v1/auth/register", NewAccount(email));
+        var duplicate = await anonymous.PostAsJsonAsync("/api/v1/auth/register", NewAccount(email.ToUpperInvariant()));
 
         first.StatusCode.ShouldBe(HttpStatusCode.Created);
         duplicate.StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
 
     [Fact]
-    public async Task CreateUser_WithShortPassword_ReturnsFieldErrors()
+    public async Task SignUp_WithBadInput_ReturnsFieldErrors()
     {
-        using var admin = await factory.SignInAsNewUserAsync("Admin", Role.Admin);
+        using var anonymous = factory.CreateClient();
 
-        var response = await admin.Http.PostAsJsonAsync(
-            "/api/v1/users",
-            new { email = "short@example.com", password = "short", displayName = "Short", role = "user" });
+        var response = await anonymous.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new { email = "short@example.com", displayName = "", password = "short" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
         body.ShouldContain("\"Password\"");
+        body.ShouldContain("\"DisplayName\"");
+    }
+
+    [Fact]
+    public async Task SignUp_CannotChooseARole()
+    {
+        var email = $"sneaky.{Guid.NewGuid():N}@example.com";
+        using var anonymous = factory.CreateClient();
+
+        var response = await anonymous.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new { email, displayName = "Sneaky", password = WatchPartyApiFactory.Password, role = "admin" });
+
+        var signUp = await response.Content.ReadFromJsonAsync<LoginResult>();
+        signUp!.User.Role.ShouldBe("user");
     }
 
     private static object NewAccount(string email) => new
     {
         email,
-        password = "a long enough password",
         displayName = "New Person",
-        role = "user",
+        password = "a long enough password",
     };
 }

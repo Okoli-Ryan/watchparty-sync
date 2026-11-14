@@ -23,7 +23,7 @@ dashboard are the same; only the data layer (`src/backend`) and the server
 
 | # | Requirement | Where |
 |---|---|---|
-| 1 | Admin/user access control; admin creates users, users log in on the widget | `backend/users.ts`, `backend/auth.ts`, `popup/views/{Login,AdminUsers}.tsx`; server: `CreateUserHandler` re-checks the caller is an admin |
+| 1 | Account access: users sign up with name, e-mail and password, then log in on the widget | `backend/auth.ts`, `popup/views/Login.tsx`; server: `SignUpHandler`, `LoginHandler` |
 | 2 | Logged-in user creates a room by choosing a video on the page | `content/picker.ts` (keyboard picker + `@medv/finder` selector), `content/videoScan.ts` (ranking) |
 | 3 | On confirmation, the API stores URL + selector + currentTime; user names the room | `popup/views/CreateRoom.tsx`, `backend/rooms.ts`; server: `Room.Create` |
 | 4 | A second user sees active rooms and opens one | `popup/views/RoomList.tsx`, background auto-navigates the tab |
@@ -55,7 +55,7 @@ session. All API work therefore lives at the **extension** origin: the bearer
 token is kept in `chrome.storage.local` (`src/backend/session.ts`), which the
 popup, the dashboard and the background service worker share.
 
-- **Popup** (`src/popup`) — interactive UI. Login, admin user-creation, room
+- **Popup** (`src/popup`) — interactive UI. Sign-up and login, room
   list, create/confirm, in-room controls.
 - **Background service worker** (`src/background/service-worker.ts`) — owns all
   *realtime* work (the SignalR connection, playback writes, presence heartbeat)
@@ -80,17 +80,12 @@ in `server/`), set a JWT signing key with `dotnet user-secrets`, and
 `dotnet run --project src/WatchParty.Api`. It listens on `http://localhost:5080`.
 For production, the same file covers Neon, migrations and environment variables.
 
-### 2. Bootstrap the first admin (one-time)
+### 2. Create an account
 
-Only an admin can create users, so the first one comes from the server console.
-The password is typed unechoed, or read from `WATCHPARTY_ADMIN_PASSWORD`:
-
-```bash
-dotnet run --project server/src/WatchParty.Api -- seed-admin --email you@example.com --name "You"
-```
-
-That admin can now create everyone else from the extension's **Users** tab.
-There is no public sign-up route at all.
+There is nothing to seed. Open the extension popup (or the web dashboard) and
+choose **Create an account** with your name, e-mail and a password of at least
+8 characters. Sign-up signs you straight in. Everyone gets an ordinary user
+account (`POST /api/v1/auth/register`).
 
 ### 3. Point the clients at the API
 
@@ -172,7 +167,7 @@ cd server && dotnet test   # 103 server tests; integration tests need Docker
 ```
 
 The end-to-end suite runs the real client modules, real SignalR and real
-AES-GCM against a **running** API. Start the API, seed two accounts, then:
+AES-GCM against a **running** API. Start the API, sign up two accounts, then:
 
 ```bash
 E2E_HOST_EMAIL=host@example.com E2E_VIEWER_EMAIL=viewer@example.com E2E_PASSWORD=... npm run test:e2e
@@ -185,7 +180,7 @@ manual walkthrough below and `WatchParty-Test-Plan.xlsx`.
 
 ## Manual walkthrough
 
-1. Log in as the admin → **Users** tab → create `user1` and `user2`.
+1. Sign up two accounts, `user1` and `user2`, from the popup's **Create an account** link.
 2. In one Chrome profile, sign in as **user1**. Open a page with a plain HTML5
    video (e.g. any `.mp4` or an `<video>` test page). **Start the video playing
    first** — many players don't create the `<video>` element until you hit play,
@@ -369,8 +364,8 @@ Reading failures:
 
 - **No refresh tokens yet.** An access token lasts 7 days
   (`Jwt:AccessTokenLifetime`), long enough to outlast any watch party. Sensitive
-  actions such as creating users re-check the account, so a deleted admin's
-  token cannot be used for them, but ordinary calls trust the token until it
+  actions re-check the account rather than trusting the token alone, so a deleted
+  account's token cannot be used for them, but ordinary calls trust the token until it
   expires.
 - **Presence uses a heartbeat.** Clean exits (**Leave**, tab close, refresh)
   hand off ownership at once; only a hard crash falls back to the 10 s staleness

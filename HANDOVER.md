@@ -81,9 +81,8 @@ none has been exercised in a browser, so re-test these paths first.
 
 1. Start the API: `server/README.md` (Postgres via `docker compose up -d`, a JWT
    signing key in user-secrets, `dotnet run --project src/WatchParty.Api`).
-2. Seed the first admin from the console:
-   `dotnet run --project server/src/WatchParty.Api -- seed-admin --email you@example.com`.
-   There is no bootstrap route in the API, by design, since only admins create users.
+2. There is no seeding step: accounts are created by self-service sign-up
+   (`POST /api/v1/auth/register`, or **Create an account** in the popup).
 3. `cp .env.example .env`; the default `VITE_API_URL` is the local API.
 4. `npm run build`, then load `dist/` unpacked. Firefox: `npm run build:firefox`
    and load `dist-firefox/manifest.json` via `about:debugging`, **and grant host
@@ -224,7 +223,7 @@ mapping each failure to its cause.
   pure and would be cheap to add.
 - **No data migration from Firebase.** The port starts with an empty database.
   Rooms, history and accounts in an existing Firestore project are not carried
-  over, and users need new accounts.
+  over, and users need to sign up again.
 
 ---
 

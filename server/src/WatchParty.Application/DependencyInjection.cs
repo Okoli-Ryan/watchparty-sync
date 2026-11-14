@@ -3,10 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using WatchParty.Application.Abstractions.Events;
 using WatchParty.Application.Abstractions.Messaging;
 using WatchParty.Application.History.Commands;
-using WatchParty.Application.Identity.CreateUser;
 using WatchParty.Application.Identity.Login;
 using WatchParty.Application.Identity.Queries;
-using WatchParty.Application.Identity.SeedAdmin;
+using WatchParty.Application.Identity.SignUp;
 using WatchParty.Application.Realtime;
 using WatchParty.Application.Rooms.Commands.CreateRoom;
 using WatchParty.Application.Rooms.Commands.HostActions;
@@ -26,12 +25,10 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, ServiceLifetime.Singleton, includeInternalTypes: true);
-        services.AddScoped<UserRegistration>();
         services.AddScoped<RoomSuccession>();
 
         services.AddCommand<LoginCommand, Result<LoginResult>, LoginHandler>();
-        services.AddCommand<CreateUserCommand, Result<UserProfileDto>, CreateUserHandler>();
-        services.AddCommand<SeedAdminCommand, Result<UserProfileDto>, SeedAdminHandler>();
+        services.AddCommand<SignUpCommand, Result<LoginResult>, SignUpHandler>();
 
         services.AddCommand<CreateRoomCommand, Result<RoomId>, CreateRoomHandler>();
         services.AddCommand<RecordPlaybackCommand, Result, HostActionHandlers>();

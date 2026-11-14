@@ -1,0 +1,67 @@
+# WatchParty API + Postgres on the VPS (or on your machine), running a prebuilt image.
+# Nothing is built here. The deploy script sets WATCHPARTY_IMAGE, e.g.
+#   WATCHPARTY_IMAGE=ghcr.io/<owner>/<repo>:<commit-sha> docker compose up -d
+#
+# Settings come from .env next to this file (see .env.example). It stays on the machine
+# and a deployment never overwrites it.
+#
+# The API is published on the loopback interface only. Put a reverse proxy (Caddy) in
+# front for HTTPS. Postgres is not published at all.
+
+name: watchparty
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: watchparty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: watchparty
+      POSTGRES_USER: watchparty
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watchparty -d watchparty"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    image: ${WATCHPARTY_IMAGE:?set WATCHPARTY_IMAGE, for example ghcr.io/owner/watchparty-aspnet:latest}
+    container_name: watchparty-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WATCHPARTY_PORT:-8081}:8080"
+    environment:
+      ConnectionStrings__WatchParty: "Host=postgres;Port=5432;Database=watchparty;Username=watchparty;Password=${POSTGRES_PASSWORD}"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY in .env (32+ random characters)}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN_0:?set CORS_ORIGIN_0 in .env, e.g. chrome-extension://<id>}
+      Cors__AllowedOrigins__1: ${CORS_ORIGIN_1:-${CORS_ORIGIN_0}}
+      # One VPS, one instance: the API applies EF migrations itself on start.
+      Database__ApplyMigrationsOnStartup: "true"
+      # Trust X-Forwarded-For/Proto from the reverse proxy. Safe because the port is loopback-only.
+      # Without it every client looks like 127.0.0.1 and shares one login rate limit.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 200
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  postgres-data:

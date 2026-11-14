@@ -121,7 +121,4 @@ button.btn-signout:hover { background: var(--danger); border-color: var(--danger
 .muted { color: var(--muted); font-size: 12px; }
 .mono { font-family: ui-monospace, Menlo, monospace; font-size: 11px; word-break: break-all; }
 .empty { text-align: center; color: var(--muted); font-size: 12px; padding: 20px 0; }
-.tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-.tabs button { width: auto; margin: 0; padding: 6px 12px; font-size: 12px; background: var(--panel-2); }
-.tabs button.active { background: var(--accent); }
 .spacer { height: 4px; }

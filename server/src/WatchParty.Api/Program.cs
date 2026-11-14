@@ -21,11 +21,6 @@ builder.Services
 
 var app = builder.Build();
 
-if (args is [SeedAdminConsole.Verb, ..])
-{
-    return await SeedAdminConsole.RunAsync(app, args);
-}
-
 // Order per the guidelines (§6): exception handler first, auth just before endpoints.
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment())

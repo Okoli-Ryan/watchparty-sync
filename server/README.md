@@ -29,12 +29,9 @@ dotnet run --project src/WatchParty.Api
 ```
 
 The API listens on `http://localhost:5080` and applies migrations on startup in
-Development only. Create the first administrator (the password is prompted for, or read
-from `WATCHPARTY_ADMIN_PASSWORD`):
-
-```bash
-dotnet run --project src/WatchParty.Api -- seed-admin --email you@example.com --name "You"
-```
+Development only. There is no seeding step: anyone can create an account with
+`POST /api/v1/auth/register` (`email`, `displayName`, `password`), which returns a
+token like `/auth/login` does.
 
 ## Tests
 

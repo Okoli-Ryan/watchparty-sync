@@ -111,8 +111,7 @@ public static class ApiServiceCollectionExtensions
 
         services
             .AddAuthorizationBuilder()
-            .SetFallbackPolicy(signedInByDefault)
-            .AddPolicy(Policies.Admin, policy => policy.RequireAuthenticatedUser().RequireClaim("role", "admin"));
+            .SetFallbackPolicy(signedInByDefault);
     }
 
     private static void AddCors(IServiceCollection services, IConfiguration configuration)

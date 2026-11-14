@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using WatchParty.Application.Abstractions.Messaging;
 using WatchParty.Application.Abstractions.Security;
-using WatchParty.Application.Identity.CreateUser;
+using WatchParty.Application.Identity.Login;
 using WatchParty.Application.Identity.Queries;
-using WatchParty.Application.Identity.SeedAdmin;
+using WatchParty.Application.Identity.SignUp;
 using WatchParty.Domain.Identity;
 using WatchParty.Domain.SharedKernel;
 
@@ -21,7 +21,7 @@ namespace WatchParty.Api.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class WatchPartyApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public const string AdminPassword = "correct horse battery staple";
+    public const string Password = "correct horse battery staple";
 
     private string _connectionString = string.Empty;
 
@@ -49,10 +49,10 @@ public sealed class WatchPartyApiFactory : WebApplicationFactory<Program>, IAsyn
     }
 
     /// <summary>Creates an account straight through the application layer and returns a client signed in as it.</summary>
-    public async Task<SignedInClient> SignInAsNewUserAsync(string displayName, Role role = Role.User)
+    public async Task<SignedInClient> SignInAsNewUserAsync(string displayName)
     {
         var email = $"{displayName.ToLowerInvariant().Replace(' ', '.')}.{Guid.NewGuid():N}@example.com";
-        var profile = await CreateAccountAsync(email, displayName, role);
+        var profile = await CreateAccountAsync(email, displayName);
 
         await using var scope = Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
@@ -64,25 +64,12 @@ public sealed class WatchPartyApiFactory : WebApplicationFactory<Program>, IAsyn
         return new SignedInClient(httpClient, profile, token.Token);
     }
 
-    public async Task<UserProfileDto> CreateAccountAsync(string email, string displayName, Role role)
+    /// <summary>Creates an account the way production does: through sign-up.</summary>
+    public async Task<UserProfileDto> CreateAccountAsync(string email, string displayName)
     {
         await using var scope = Services.CreateAsyncScope();
-        var seedAdmin = scope.ServiceProvider.GetRequiredService<ICommandHandler<SeedAdminCommand, Result<UserProfileDto>>>();
-        var createUser = scope.ServiceProvider.GetRequiredService<ICommandHandler<CreateUserCommand, Result<UserProfileDto>>>();
-
-        if (role == Role.Admin)
-        {
-            var admin = await seedAdmin.HandleAsync(new SeedAdminCommand(email, AdminPassword, displayName), CancellationToken.None);
-            return admin.Value;
-        }
-
-        // Ordinary accounts are made the way production makes them: by an admin.
-        var creator = await seedAdmin.HandleAsync(
-            new SeedAdminCommand($"creator.{Guid.NewGuid():N}@example.com", AdminPassword, "Creator"),
-            CancellationToken.None);
-
-        var command = new CreateUserCommand(new UserId(creator.Value.Uid), email, AdminPassword, displayName, role);
-        var created = await createUser.HandleAsync(command, CancellationToken.None);
-        return created.Value;
+        var signUp = scope.ServiceProvider.GetRequiredService<ICommandHandler<SignUpCommand, Result<LoginResult>>>();
+        var created = await signUp.HandleAsync(new SignUpCommand(email, displayName, Password), CancellationToken.None);
+        return created.Value.User;
     }
 }

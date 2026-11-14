@@ -8,19 +8,33 @@ interface LoginResponse {
   user: UserProfile;
 }
 
-/** Sign in an existing account. Accounts are created by an admin (see users.ts). */
-export async function login(email: string, password: string): Promise<UserProfile> {
-  const response = await apiRequest<LoginResponse>('POST', '/auth/login', {
-    body: { email: email.trim(), password },
-    anonymous: true,
-  });
-
+async function startSession(response: LoginResponse): Promise<UserProfile> {
   await writeSession({
     accessToken: response.accessToken,
     expiresAt: response.expiresAt,
     profile: response.user,
   });
   return response.user;
+}
+
+/** Sign in an existing account. */
+export async function login(email: string, password: string): Promise<UserProfile> {
+  return startSession(
+    await apiRequest<LoginResponse>('POST', '/auth/login', {
+      body: { email: email.trim(), password },
+      anonymous: true,
+    }),
+  );
+}
+
+/** Create an account and sign straight in. The server always makes an ordinary user. */
+export async function signUp(email: string, displayName: string, password: string): Promise<UserProfile> {
+  return startSession(
+    await apiRequest<LoginResponse>('POST', '/auth/register', {
+      body: { email: email.trim(), displayName: displayName.trim(), password },
+      anonymous: true,
+    }),
+  );
 }
 
 /** Forget the token everywhere: the popup, the dashboard and the service worker share it. */
