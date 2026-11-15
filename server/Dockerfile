@@ -11,7 +11,7 @@ WORKDIR /src
 
 # Build settings and package versions, then only the project files, so editing source
 # doesn't re-download every NuGet package.
-COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/WatchParty.Domain/WatchParty.Domain.csproj                 src/WatchParty.Domain/
 COPY src/WatchParty.Application/WatchParty.Application.csproj       src/WatchParty.Application/
 COPY src/WatchParty.Infrastructure/WatchParty.Infrastructure.csproj src/WatchParty.Infrastructure/
