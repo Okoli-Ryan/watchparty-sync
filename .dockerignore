@@ -1,0 +1,24 @@
+# Build context for deploy/web/Dockerfile (the repo root). The API image builds from server/
+# with its own context and is not affected.
+.git
+.github
+**/node_modules
+dist
+dist-firefox
+web/dist
+server
+tests
+scripts
+*.zip
+*.xlsx
+
+# never ship local config; VITE_API_URL comes in as a build argument
+.env
+.env.*
+!.env.example
+
+# the landing's local build output and design-check artefacts
+landing/.next
+landing/out
+landing/shots
+landing/.taste-skill

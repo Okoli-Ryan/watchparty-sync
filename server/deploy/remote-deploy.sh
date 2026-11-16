@@ -5,13 +5,15 @@
 #
 #   remote-deploy.sh <image:tag> [app-dir]
 #
-# Called by .github/workflows/deploy.yml. Needs a one-time `docker login ghcr.io` on this
+# Called by .github/workflows/deploy.yml (the API) and deploy-web.yml (the landing and the
+# dashboard, with WATCHPARTY_SERVICE=web WATCHPARTY_CONTAINER=watchparty-web). Needs a one-time `docker login ghcr.io` on this
 # machine and a filled-in .env in the app dir. The database volume and .env are never touched.
 
 set -euo pipefail
 
 IMAGE_REF="${1:?usage: remote-deploy.sh <image:tag> [app-dir]}"
 APP_DIR="${2:-$HOME/watchparty}"
+SERVICE="${WATCHPARTY_SERVICE:-api}"
 CONTAINER="${WATCHPARTY_CONTAINER:-watchparty-api}"
 WAIT_SECONDS="${WATCHPARTY_WAIT_SECONDS:-120}"
 
@@ -34,7 +36,7 @@ PREVIOUS="$(docker inspect --format '{{.Config.Image}}' "$CONTAINER" 2>/dev/null
 
 say "pulling $IMAGE_REF"
 export WATCHPARTY_IMAGE="$IMAGE_REF"
-compose pull api || die "could not pull $IMAGE_REF. Is this machine logged in to ghcr.io? (docker login ghcr.io)"
+compose pull "$SERVICE" || die "could not pull $IMAGE_REF. Is this machine logged in to ghcr.io? (docker login ghcr.io)"
 
 # ---- start ---------------------------------------------------------------------
 
@@ -67,11 +69,11 @@ fi
 # ---- it didn't come up: say why, then go back ----------------------------------
 
 printf '\nThe new release is not healthy (%s). Last log lines:\n\n' "$STATUS" >&2
-compose logs --tail 40 api 2>&1 | sed 's/^/    /' >&2 || true
+compose logs --tail 40 "$SERVICE" 2>&1 | sed 's/^/    /' >&2 || true
 
 if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" != "$IMAGE_REF" ]; then
   say "rolling back to $PREVIOUS"
-  WATCHPARTY_IMAGE="$PREVIOUS" compose up -d --force-recreate --pull never api || true
+  WATCHPARTY_IMAGE="$PREVIOUS" compose up -d --force-recreate --pull never "$SERVICE" || true
   die "rolled back to $PREVIOUS. The new release failed: $STATUS"
 fi
 die "the deploy failed ($STATUS) and there is no previous release to go back to"

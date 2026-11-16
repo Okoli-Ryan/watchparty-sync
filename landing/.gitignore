@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# design checks: screenshots and the headless Chrome profiles they use
+shots/
+.taste-skill/chrome-*/
+# the gate's per-run reports and crops (the deal histories stay: they keep later pages from repeating a deal)
+.taste-skill/gate/
+.taste-skill/gate.json
+.taste-skill/build*.json
+.taste-skill/found.json
+.taste-skill/gate-hook-missing.txt

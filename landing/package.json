@@ -1,0 +1,23 @@
+{
+  "name": "watchparty-landing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The WatchParty Sync landing page: a Next.js static export served from the VPS.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build",
+    "start": "npx --yes serve@14.2.4 out -l 3100"
+  },
+  "dependencies": {
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.7.2"
+  }
+}

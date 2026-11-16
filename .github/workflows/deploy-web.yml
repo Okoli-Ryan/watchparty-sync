@@ -1,0 +1,124 @@
+# Build the landing page and the web dashboard into one nginx image, push it to GHCR, then
+# deploy that exact image to the VPS. The API has its own workflow (deploy.yml).
+#
+# Setup (variables, Caddy, first run): deploy/web/DEPLOY.md
+
+name: deploy-web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'landing/**'
+      - 'web/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'deploy/web/**'
+      - 'server/deploy/remote-deploy.sh'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: ref
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-web" >> "$GITHUB_OUTPUT"
+
+      # The dashboard bakes the API's address into its bundle, so it must be known at build time.
+      - name: Check the API address
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::Set the repository variable APP_URL to the API's public address (https://api.example.com)."; exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/web/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=${{ vars.APP_URL }}
+            SITE_URL=${{ vars.LANDING_URL }}
+          tags: |
+            ${{ steps.ref.outputs.image }}:${{ github.sha }}
+            ${{ steps.ref.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      IMAGE_REF: ${{ needs.build.outputs.image }}:${{ github.sha }}
+      LANDING_URL: ${{ vars.LANDING_URL }}
+      DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Send the compose file and deploy script
+        run: |
+          ssh "$VPS_USER@$VPS_HOST" 'mkdir -p ~/watchparty-web'
+          scp deploy/web/docker-compose.yml server/deploy/remote-deploy.sh "$VPS_USER@$VPS_HOST:~/watchparty-web/"
+
+      - name: Pull and restart on the VPS
+        run: >
+          ssh "$VPS_USER@$VPS_HOST"
+          "WATCHPARTY_SERVICE=web WATCHPARTY_CONTAINER=watchparty-web WATCHPARTY_WAIT_SECONDS=60
+          bash ~/watchparty-web/remote-deploy.sh '$IMAGE_REF' ~/watchparty-web"
+
+      - name: Check the public addresses
+        run: |
+          check() {
+            [ -z "$2" ] && { echo "::warning::Repository variable $1 is not set, skipping its check."; return 0; }
+            for attempt in $(seq 1 10); do
+              if curl -fsS --max-time 8 -o /dev/null "$2"; then echo "$1 up on attempt $attempt"; return 0; fi
+              echo "$1 attempt $attempt: not answering yet"; sleep 3
+            done
+            echo "::error::$2 did not answer. Check Caddy and DNS."; return 1
+          }
+          check LANDING_URL "$LANDING_URL"
+          check DASHBOARD_URL "$DASHBOARD_URL"
