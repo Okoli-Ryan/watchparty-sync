@@ -1,7 +1,7 @@
 using FluentValidation;
 using WatchParty.Domain.Rooms;
 
-namespace WatchParty.Application.Rooms.Commands.HostActions;
+namespace WatchParty.Application.Rooms.Commands.RepointVideo;
 
 internal sealed class RepointVideoValidator : AbstractValidator<RepointVideoCommand>
 {

@@ -1,6 +1,6 @@
 using WatchParty.Domain.SharedKernel;
 
-namespace WatchParty.Application.Rooms.Commands.HostActions;
+namespace WatchParty.Application.Rooms.Commands.TouchRoom;
 
 /// <param name="ActorId">The host.</param>
 /// <param name="RoomId">The room.</param>

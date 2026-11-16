@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace WatchParty.Application.Rooms.Commands.HostActions;
+namespace WatchParty.Application.Rooms.Commands.TouchRoom;
 
 internal sealed class TouchRoomValidator : AbstractValidator<TouchRoomCommand>
 {

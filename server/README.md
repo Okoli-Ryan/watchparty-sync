@@ -12,6 +12,57 @@ src/WatchParty.Api             endpoints, SignalR hub, auth, rate limiting, heal
 tests/                         domain, application, integration (real Postgres), architecture
 ```
 
+## How a request flows
+
+Follow one action end to end: the host presses pause in the extension.
+
+```
+PUT /api/v1/rooms/{id}/playback
+  │
+  ▼  Api            RoomEndpoints.RecordPlaybackAsync
+  │                 binds the request, takes the user id from the JWT, builds a command
+  ▼  Application    ValidationDecorator → RecordPlaybackHandler
+  │                 validates the command, then RoomEditor loads the Room (retrying on a lost race)
+  ▼  Domain         Room.RecordPlayback
+  │                 checks the caller is the host, updates state, raises PlaybackRecorded
+  ▼  Infrastructure UnitOfWork.CommitAsync
+  │                 saves in one transaction (version-checked), then dispatches the raised events
+  ▼  Application    RealtimeNotifications.HandleAsync(PlaybackRecorded)
+  │                 turns the event into notifier.RoomChanged(roomId)
+  ▼  Api            RealtimeQueue → RealtimeBroadcaster → RealtimeHub
+                    reads the room once and pushes "room" to everyone subscribed
+```
+
+The HTTP response (`204` or a problem) is produced as soon as the commit succeeds. The
+push to viewers happens afterwards, in the background, and never blocks the request.
+
+Things that explain most of the code:
+
+- **Errors are values.** Handlers and domain methods return `Result` or `Result<T>`;
+  `ResultHttpExtensions` maps an `Error` to the HTTP status. Exceptions mean bugs.
+- **One aggregate per commit.** Every aggregate carries a version. A commit that loses a
+  race comes back as `ConcurrencyErrors.Conflict`, and handlers that are safe to redo
+  re-run through `ConcurrencyRetry`.
+- **Domain events carry the side effects.** An aggregate only raises an event. Reacting
+  to it (pushing to clients, recording attendance, syncing roles) is an
+  `IDomainEventHandler<TEvent>` in Application, registered automatically from the
+  interfaces a class implements.
+- **Ownership has two claims.** `Room.OwnerId` is who hosts right now and moves on its
+  own when the host goes quiet; `PrimaryOwnerId` is who the room belongs to and only
+  moves on a deliberate transfer. `RoomSuccession` applies the handoff after every join,
+  heartbeat and leave.
+
+Where things live:
+
+| To change…                          | Look in                                             |
+| ----------------------------------- | --------------------------------------------------- |
+| a route or its request body         | `Api/Endpoints`, `Api/Contracts`                    |
+| what a use case does                | `Application/<Area>/Commands/<UseCase>`: command, validator, handler |
+| a business rule                     | `Domain/Rooms`, `Domain/History`, `Domain/Identity` |
+| what gets pushed to clients         | `Application/Realtime/RealtimeNotifications`, `Api/Realtime` |
+| a table, index or query             | `Infrastructure/Persistence` (`Configurations`, `Queries`, `Migrations`) |
+| rate limits, auth, CORS             | `Api/Hosting/ApiServiceCollectionExtensions`        |
+
 ## Run it locally
 
 Needs the .NET 10 SDK and Docker.

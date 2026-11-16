@@ -1,6 +1,6 @@
 using WatchParty.Domain.SharedKernel;
 
-namespace WatchParty.Application.History.Commands;
+namespace WatchParty.Application.History.Commands.MarkRead;
 
 /// <param name="ActorId">Whose read position.</param>
 /// <param name="RoomId">Which room's chat.</param>

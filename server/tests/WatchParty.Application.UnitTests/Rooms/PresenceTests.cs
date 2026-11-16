@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Time.Testing;
-using WatchParty.Application.Rooms.Commands.Presence;
+using WatchParty.Application.Rooms.Commands.Heartbeat;
+using WatchParty.Application.Rooms.Commands.JoinRoom;
+using WatchParty.Application.Rooms.Commands.LeaveRoom;
 using WatchParty.Application.Rooms.Services;
 using WatchParty.Application.UnitTests.Fakes;
 using WatchParty.Domain.Identity;
@@ -8,16 +10,21 @@ using WatchParty.Domain.SharedKernel;
 
 namespace WatchParty.Application.UnitTests.Rooms;
 
-public sealed class PresenceHandlersTests
+public sealed class PresenceTests
 {
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 11, 14, 20, 0, 0, TimeSpan.Zero));
     private readonly InMemoryStore _store = new();
-    private readonly PresenceHandlers _handlers;
+    private readonly JoinRoomHandler _join;
+    private readonly HeartbeatHandler _heartbeat;
+    private readonly LeaveRoomHandler _leave;
 
-    public PresenceHandlersTests()
+    public PresenceTests()
     {
         var succession = new RoomSuccession(_store, _store, _store, _clock);
-        _handlers = new PresenceHandlers(_store, _store, _store, succession, _store, _clock);
+        var entry = new RoomEntry(_store, _store, _store, _store, _clock);
+        _join = new JoinRoomHandler(entry, succession);
+        _heartbeat = new HeartbeatHandler(_store, entry, succession, _store, _clock);
+        _leave = new LeaveRoomHandler(_store, succession, _store);
     }
 
     [Fact]
@@ -27,7 +34,7 @@ public sealed class PresenceHandlersTests
         var viewer = AddUser("viewer@example.com");
         var room = AddRoom(host);
 
-        var result = await _handlers.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
+        var result = await _join.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
 
         result.Value.Role.ShouldBe(MemberRole.Viewer);
         var membership = _store.Memberships[new MembershipId(room.Id, viewer.Id)];
@@ -41,7 +48,7 @@ public sealed class PresenceHandlersTests
         var room = AddRoom(host);
         room.Deactivate();
 
-        var result = await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        var result = await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
 
         result.Error.ShouldBe(RoomErrors.Inactive);
     }
@@ -54,7 +61,7 @@ public sealed class PresenceHandlersTests
         var room = AddRoom(host);
         room.SucceedTo(standIn.Id, standIn.DisplayName);
 
-        var result = await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        var result = await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
 
         result.Value.Role.ShouldBe(MemberRole.Owner);
         room.OwnerId.ShouldBe(host.Id);
@@ -66,12 +73,12 @@ public sealed class PresenceHandlersTests
         var host = AddUser("host@example.com");
         var viewer = AddUser("viewer@example.com");
         var room = AddRoom(host);
-        await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
-        await _handlers.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
 
         // The host's browser crashes: only the viewer keeps heartbeating.
         _clock.Advance(Membership.StaleAfter + TimeSpan.FromSeconds(1));
-        var result = await _handlers.HandleAsync(new HeartbeatCommand(viewer.Id, room.Id), CancellationToken.None);
+        var result = await _heartbeat.HandleAsync(new HeartbeatCommand(viewer.Id, room.Id), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         room.OwnerId.ShouldBe(viewer.Id);
@@ -85,7 +92,7 @@ public sealed class PresenceHandlersTests
         var host = AddUser("host@example.com");
         var room = AddRoom(host);
 
-        var result = await _handlers.HandleAsync(new HeartbeatCommand(host.Id, room.Id), CancellationToken.None);
+        var result = await _heartbeat.HandleAsync(new HeartbeatCommand(host.Id, room.Id), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         _store.Memberships.ShouldContainKey(new MembershipId(room.Id, host.Id));
@@ -97,10 +104,10 @@ public sealed class PresenceHandlersTests
         var host = AddUser("host@example.com");
         var viewer = AddUser("viewer@example.com");
         var room = AddRoom(host);
-        await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
-        await _handlers.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(viewer.Id, room.Id), CancellationToken.None);
 
-        await _handlers.HandleAsync(new LeaveRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _leave.HandleAsync(new LeaveRoomCommand(host.Id, room.Id), CancellationToken.None);
 
         room.OwnerId.ShouldBe(viewer.Id);
         room.IsActive.ShouldBeTrue();
@@ -111,9 +118,9 @@ public sealed class PresenceHandlersTests
     {
         var host = AddUser("host@example.com");
         var room = AddRoom(host);
-        await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
 
-        await _handlers.HandleAsync(new LeaveRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _leave.HandleAsync(new LeaveRoomCommand(host.Id, room.Id), CancellationToken.None);
 
         room.IsActive.ShouldBeFalse();
     }
@@ -124,9 +131,9 @@ public sealed class PresenceHandlersTests
         var host = AddUser("host@example.com");
         var stranger = AddUser("stranger@example.com");
         var room = AddRoom(host);
-        await _handlers.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
+        await _join.HandleAsync(new JoinRoomCommand(host.Id, room.Id), CancellationToken.None);
 
-        var result = await _handlers.HandleAsync(new LeaveRoomCommand(stranger.Id, room.Id), CancellationToken.None);
+        var result = await _leave.HandleAsync(new LeaveRoomCommand(stranger.Id, room.Id), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         room.IsActive.ShouldBeTrue();

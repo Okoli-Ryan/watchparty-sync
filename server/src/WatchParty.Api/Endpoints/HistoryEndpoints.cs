@@ -4,7 +4,9 @@ using WatchParty.Api.Auth;
 using WatchParty.Api.Contracts;
 using WatchParty.Api.Errors;
 using WatchParty.Application.Abstractions.Messaging;
-using WatchParty.Application.History.Commands;
+using WatchParty.Application.History.Commands.MarkRead;
+using WatchParty.Application.History.Commands.RemoveFromHistory;
+using WatchParty.Application.History.Commands.SetFavourite;
 using WatchParty.Application.History.Queries;
 using WatchParty.Domain.SharedKernel;
 

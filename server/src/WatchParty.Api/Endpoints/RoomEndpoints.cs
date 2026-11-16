@@ -5,7 +5,10 @@ using WatchParty.Api.Contracts;
 using WatchParty.Api.Errors;
 using WatchParty.Application.Abstractions.Messaging;
 using WatchParty.Application.Rooms.Commands.CreateRoom;
-using WatchParty.Application.Rooms.Commands.HostActions;
+using WatchParty.Application.Rooms.Commands.RecordPlayback;
+using WatchParty.Application.Rooms.Commands.RepointVideo;
+using WatchParty.Application.Rooms.Commands.TouchRoom;
+using WatchParty.Application.Rooms.Commands.TransferOwnership;
 using WatchParty.Application.Rooms.Queries;
 using WatchParty.Domain.SharedKernel;
 

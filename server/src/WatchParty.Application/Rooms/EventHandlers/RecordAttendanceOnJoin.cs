@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using WatchParty.Application.Abstractions.Events;
 using WatchParty.Application.Abstractions.Messaging;
-using WatchParty.Application.History.Commands;
+using WatchParty.Application.History.Commands.RecordAttendance;
 using WatchParty.Domain.Rooms.Events;
 using WatchParty.Domain.SharedKernel;
 
