@@ -1,6 +1,7 @@
 import { DRIFT_THRESHOLD, ELEMENT_WAIT_MS } from '../shared/constants';
 import { log, warn, fail } from '../shared/log';
 import { bestVideo } from './videoScan';
+import { T, loadWidgetFont } from './theme';
 import type { MemberRole, PlaybackState } from '../shared/types';
 
 // Pure-DOM controller: attaches to a <video> by selector and either emits the
@@ -515,23 +516,42 @@ export class VideoController {
 
   private showJoinGate() {
     if (this.gateOverlay) return;
+    loadWidgetFont();
     const btn = document.createElement('button');
-    btn.textContent = '▶  Click to start watching together';
+    btn.textContent = '▶  Start watching together';
     Object.assign(btn.style, {
       position: 'fixed',
       bottom: '24px',
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: '2147483000',
-      padding: '12px 20px',
+      height: '48px',
+      padding: '0 24px',
       borderRadius: '999px',
       border: 'none',
-      background: '#6c5ce7',
+      background: T.accent,
       color: '#fff',
-      font: '600 14px/1 system-ui, sans-serif',
+      font: `600 15px/1 ${T.font}`,
       cursor: 'pointer',
-      boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+      boxShadow: T.shadow,
     } as Partial<CSSStyleDeclaration>);
+    // It asks for the one click the browser needs, so it rises in and breathes until pressed.
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      btn.animate(
+        [
+          { opacity: 0, transform: 'translateX(-50%) translateY(12px)' },
+          { opacity: 1, transform: 'translateX(-50%)' },
+        ],
+        { duration: 320, easing: T.spring },
+      );
+      btn.animate(
+        [
+          { boxShadow: `${T.shadow}, 0 0 0 0 rgba(31, 107, 58, 0.45)` },
+          { boxShadow: `${T.shadow}, 0 0 0 12px rgba(31, 107, 58, 0)` },
+        ],
+        { duration: 1800, delay: 320, iterations: Infinity, easing: 'ease-out' },
+      );
+    }
     btn.addEventListener('click', () => {
       // Genuine user gesture: unlocks unmuted play() for the session. Only ever
       // mirror the owner — never blind-play, or we'd start playing while the
@@ -558,20 +578,22 @@ export class VideoController {
   private showUnmuteChip() {
     if (this.unmuteChip) return;
     const chip = document.createElement('button');
-    chip.textContent = '🔇  Muted — click to unmute';
+    loadWidgetFont();
+    chip.textContent = '🔇  Muted, click to unmute';
     Object.assign(chip.style, {
       position: 'fixed',
       bottom: '24px',
       right: '24px',
       zIndex: '2147483000',
-      padding: '10px 16px',
+      height: '40px',
+      padding: '0 16px',
       borderRadius: '999px',
-      border: 'none',
-      background: 'rgba(20,20,30,0.92)',
-      color: '#fff',
-      font: '600 13px/1 system-ui, sans-serif',
+      border: `1px solid ${T.line}`,
+      background: T.card,
+      color: T.ink,
+      font: `600 13px/1 ${T.font}`,
       cursor: 'pointer',
-      boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+      boxShadow: T.shadow,
     } as Partial<CSSStyleDeclaration>);
     chip.addEventListener('click', () => {
       if (this.video) this.video.muted = false;

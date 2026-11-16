@@ -55,6 +55,11 @@ export default defineManifest({
   // more thing a reviewer asks about, so it is gone. It would only be needed if
   // this moved to optional host permissions and registered content scripts at
   // runtime (see the note in HANDOVER.md).
+  // The on-page widget's typeface. A shadow root can't declare fonts, so the content script
+  // registers this one file on the page (src/content/theme.ts). Only the font is exposed.
+  web_accessible_resources: [
+    { resources: ['fonts/urbanist-latin-wght-normal.woff2'], matches: ['*://*/*'] },
+  ],
   permissions: ['tabs', 'storage', 'activeTab'],
   // Breadth is load-bearing, not laziness: a viewer's tab is NAVIGATED to the
   // room's page by the background, and the content script must already be there

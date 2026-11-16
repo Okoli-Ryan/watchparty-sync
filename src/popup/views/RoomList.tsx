@@ -77,17 +77,23 @@ export function RoomList({ me: _me }: { me: UserProfile }) {
   return (
     <div>
       <button onClick={startPicker} disabled={busy}>
-        + Create a room (pick a video)
+        {busy && <span className="wp-spinner" aria-hidden="true" />}
+        Create a room from this page
       </button>
       {error && <div className="alert error">{error}</div>}
 
       <h2 style={{ marginTop: 14 }}>Active rooms ({live.length})</h2>
       {loading ? (
-        <div className="empty">Loading…</div>
+        <div className="skeleton-list" aria-label="Loading rooms">
+          <div className="wp-skeleton" />
+          <div className="wp-skeleton" />
+          <div className="wp-skeleton" />
+        </div>
       ) : live.length === 0 ? (
         <div className="empty">No active rooms. Create one!</div>
       ) : (
-        live.map((room) => (
+        <div className="room-list wp-stagger">
+        {live.map((room) => (
           <div className="card" key={room.id}>
             <div className="room">
               <div className="meta">
@@ -132,13 +138,14 @@ export function RoomList({ me: _me }: { me: UserProfile }) {
               </form>
             )}
           </div>
-        ))
+        ))}
+        </div>
       )}
 
       {/* History, favourites and settings all live on the dashboard, where
           there's room for them. */}
       <button className="secondary" style={{ marginTop: 14 }} onClick={openDashboard}>
-        ⧉ Open dashboard — history &amp; favourites
+        Open the dashboard
       </button>
     </div>
   );

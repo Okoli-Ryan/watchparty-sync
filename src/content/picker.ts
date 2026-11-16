@@ -1,5 +1,6 @@
 import { finder } from '@medv/finder';
 import { rankedVideos, type VideoCandidate } from './videoScan';
+import { T, loadWidgetFont } from './theme';
 
 // Keyboard-driven video picker.
 //
@@ -59,17 +60,22 @@ function styleEl(el: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
 }
 
 function buildUi() {
+  loadWidgetFont();
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const glide = reduced ? 'none' : `top 160ms ${T.ease}, left 160ms ${T.ease}, width 160ms ${T.ease}, height 160ms ${T.ease}`;
+
+  // The picked video wears the landing page's bright green outline; the rest of the page dims.
   highlight = document.createElement('div');
   styleEl(highlight, {
     position: 'fixed',
     pointerEvents: 'none',
-    border: '3px solid #6c5ce7',
-    background: 'rgba(108, 92, 231, 0.22)',
-    borderRadius: '6px',
-    boxShadow: '0 0 0 2000px rgba(0, 0, 0, 0.45)',
+    border: `3px solid ${T.pick}`,
+    background: 'rgba(127, 212, 154, 0.1)',
+    borderRadius: '12px',
+    boxShadow: '0 0 0 2000px rgba(10, 10, 10, 0.5)',
     zIndex: String(Z + 1),
     display: 'none',
-    transition: 'top 90ms ease-out, left 90ms ease-out, width 90ms ease-out, height 90ms ease-out',
+    transition: glide,
   });
 
   label = document.createElement('div');
@@ -77,13 +83,15 @@ function buildUi() {
     position: 'fixed',
     pointerEvents: 'none',
     zIndex: String(Z + 2),
-    padding: '4px 8px',
-    borderRadius: '4px',
-    background: '#6c5ce7',
-    color: '#fff',
-    font: '600 12px/1.2 system-ui, sans-serif',
+    padding: '6px 12px',
+    borderRadius: '999px',
+    background: T.pick,
+    color: T.ink,
+    font: `600 12px/1.2 ${T.font}`,
     display: 'none',
     whiteSpace: 'nowrap',
+    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.3)',
+    transition: reduced ? 'none' : `top 160ms ${T.ease}, left 160ms ${T.ease}`,
   });
 
   document.body.append(highlight, label);
@@ -94,41 +102,51 @@ function buildUi() {
   banner = document.createElement('div');
   styleEl(banner, {
     position: 'fixed',
-    top: '18px',
+    top: '20px',
     left: '50%',
     transform: 'translateX(-50%)',
     zIndex: String(Z + 3),
-    minWidth: '320px',
-    maxWidth: '90vw',
-    padding: '14px 20px',
-    borderRadius: '14px',
-    background: 'rgba(18,18,28,0.96)',
-    color: '#fff',
-    font: '400 13px/1.45 system-ui, sans-serif',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.55)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    textAlign: 'center',
+    width: 'min(440px, calc(100vw - 32px))',
+    padding: '18px 22px',
+    borderRadius: '22px',
+    background: T.card,
+    color: T.ink,
+    font: `400 14px/1.45 ${T.font}`,
+    boxShadow: T.shadow,
+    border: `1px solid ${T.line}`,
+    textAlign: 'left',
     pointerEvents: 'none',
   });
+  const key = (k: string) =>
+    `<b style="display:inline-block;min-width:24px;padding:2px 7px;border:1px solid ${T.lineStrong};border-radius:7px;font:500 12px/1.4 ${T.mono};text-align:center;color:${T.ink};background:${T.card}">${k}</b>`;
   banner.innerHTML = `
-    <div style="font:700 15px/1.3 system-ui,sans-serif;margin-bottom:8px">
+    <div style="font:600 18px/1.25 ${T.font};letter-spacing:-.02em;margin-bottom:6px">
       Choose the video to sync
     </div>
-    <div data-wp="status" style="color:#c3b9ff;font-weight:600;margin-bottom:8px">
+    <div data-wp="status" style="color:${T.accent};font-weight:600;margin-bottom:12px">
       Looking for videos…
     </div>
-    <div style="color:#9a9ab0;font-size:12px">
-      <b style="color:#fff">↑ ↓</b> or <b style="color:#fff">← →</b> to browse
-      &nbsp;·&nbsp; <b style="color:#fff">Enter</b> to select
-      &nbsp;·&nbsp; <b style="color:#fff">Esc</b> to cancel
+    <div style="display:flex;flex-wrap:wrap;gap:6px 14px;color:${T.muted};font-size:13px">
+      <span>${key('↑')} ${key('↓')} or ${key('←')} ${key('→')} to browse</span>
+      <span>${key('Enter')} to pick</span>
+      <span>${key('Esc')} to cancel</span>
     </div>
-    <div style="margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,0.12);
-                color:#ffd479;font-size:12px;line-height:1.4">
-      ▶ <b>Start the video playing first.</b> Many players don't create the
+    <div style="margin-top:14px;padding:10px 12px;border-radius:12px;background:#fdf3df;
+                color:#6b4600;font-size:13px;line-height:1.45">
+      <b>Start the video playing first.</b> Many players don't create the
       video at all until you hit play, and a stopped one is easy to mistake for
       an advert.
     </div>`;
   document.body.append(banner);
+  if (!reduced) {
+    banner.animate(
+      [
+        { opacity: 0, transform: 'translateX(-50%) translateY(-10px) scale(0.97)' },
+        { opacity: 1, transform: 'translateX(-50%)' },
+      ],
+      { duration: 280, easing: T.spring },
+    );
+  }
 }
 
 /** Draw the highlight over `el`, or hide it when there is nothing selected. */

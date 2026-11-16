@@ -15,6 +15,8 @@ dashboard are the same; only the data layer (`src/backend`) and the server
 
 - **[server/README.md](server/README.md)** — the API: running it locally, tests, deploying to Neon, changing the schema.
 - **[server/ASPNET_GUIDELINES.md](server/ASPNET_GUIDELINES.md)** — the coding standard the server follows.
+- **[landing/](landing/)** — the public landing page: a Next.js static export (`cd landing && npm run dev`).
+- **[deploy/web/DEPLOY.md](deploy/web/DEPLOY.md)** — deploying the landing page and the web dashboard to the VPS, next to the API.
 - **[DECISIONS.md](DECISIONS.md)** — why the architecture is shaped this way, one entry per major decision with the constraint that forced it and what it costs.
 - **[HANDOVER.md](HANDOVER.md)** — start here if you are picking this up: current state, where things live, traps that have already bitten, and known gaps.
 - **WatchParty-Test-Plan.xlsx** — 113 manual test cases plus 11 regression checks.

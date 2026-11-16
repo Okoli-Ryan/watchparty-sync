@@ -31,6 +31,11 @@ count and make itself a candidate to inherit a room it cannot actually drive.
 So it cannot control playback either. Play, pause, seek and host handover stay in
 the extension, where the video is.
 
+## Deploying to the VPS
+
+The dashboard now ships with the landing page as one nginx image on the same VPS as the API:
+see [deploy/web/DEPLOY.md](../deploy/web/DEPLOY.md). The Vercel route below is the older setup.
+
 ## Deploying to Vercel
 
 1. **Import the repo** at [vercel.com/new](https://vercel.com/new). Leave the root

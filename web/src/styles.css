@@ -1,18 +1,22 @@
+/* The web dashboard. Tokens and motion: src/shared/theme.css, the landing page's system, shared
+   with the extension's popup and dashboard so the three never drift apart. */
+@import '../../src/shared/theme.css';
+
 :root {
-  --bg: #0f0f16;
-  --panel: #171722;
-  --panel-2: #1e1e2c;
-  --line: #2c2c3f;
-  --text: #f2f2f7;
-  --muted: #9a9ab0;
-  --accent: #6c5ce7;
-  --accent-soft: rgba(108, 92, 231, 0.18);
-  --green: #2ecc71;
-  --amber: #ffd479;
-  --red: #ff6b6b;
+  /* the names this sheet always used, now read from the theme */
+  --bg: var(--wp-bg);
+  --panel: var(--wp-card);
+  --panel-2: var(--wp-surface);
+  --line: var(--wp-line);
+  --text: var(--wp-ink);
+  --muted: var(--wp-muted);
+  --accent: var(--wp-accent);
+  --accent-soft: var(--wp-accent-soft);
+  --green: var(--wp-live);
+  --amber: #d29a1e;
+  --red: var(--wp-danger);
   /* Overwritten in px by viewport.ts; see the note there on why not 100vh. */
   --app-h: 100dvh;
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -20,26 +24,37 @@
 html, body { height: 100%; overflow: hidden; }
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--wp-bg);
+  color: var(--wp-ink);
+  font: 400 15px/1.5 var(--wp-font);
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
 button { font: inherit; cursor: pointer; }
 input { font: inherit; }
 h1, h2, h3 { margin: 0; }
+button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--wp-focus); }
 
-.muted { color: var(--muted); }
-.small { font-size: 12px; }
-.boot { padding: 40px; color: var(--muted); }
+.muted { color: var(--wp-muted); }
+a { color: var(--wp-accent); font-weight: 600; text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.small { font-size: 13px; }
+.boot { padding: 40px; color: var(--wp-muted); animation: wp-rise 0.3s var(--wp-ease) both; }
 
-.alert { padding: 8px 10px; border-radius: 8px; font-size: 13px; margin: 8px 0; }
-.alert.error { background: rgba(255, 107, 107, 0.12); color: var(--red); }
-.alert.side { margin: 8px; font-size: 12px; }
+.alert {
+  padding: 10px 12px; border-radius: var(--wp-r-sm); font-size: 14px; margin: 8px 0;
+  border: 1px solid transparent; animation: wp-rise 0.26s var(--wp-ease) both;
+}
+.alert.error { background: var(--wp-danger-soft); color: var(--wp-danger); border-color: var(--wp-danger-line); }
+.alert.side { margin: 8px; font-size: 13px; }
 
-.empty { color: var(--muted); font-size: 13px; padding: 14px; }
-.empty.pad { padding: 40px; }
+.empty { color: var(--wp-muted); font-size: 14px; padding: 16px; }
+.empty.pad {
+  margin: 40px; padding: 56px 24px; text-align: center;
+  border: 1px dashed var(--wp-line-strong); border-radius: var(--wp-r-lg);
+  animation: wp-rise 0.32s var(--wp-ease) both;
+}
 
 /* --- login ---------------------------------------------------------------- */
 /* Scrollable in its own right: body is overflow:hidden for the app shell, so
@@ -49,178 +64,215 @@ h1, h2, h3 { margin: 0; }
   display: grid; place-items: center; min-height: var(--app-h);
   padding: 20px; overflow-y: auto;
 }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
-.login { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 6px; }
-.login h1 { font-size: 19px; }
-.login p { margin: 0 0 10px; }
-.login label { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.card {
+  background: var(--wp-card); border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-lg); padding: 32px; box-shadow: var(--wp-shadow-1);
+}
+.login { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 6px; animation: wp-pop 0.36s var(--wp-ease) both; }
+.login h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.1; }
+.login p { margin: 0 0 12px; color: var(--wp-muted); }
+.login label { font-size: 14px; font-weight: 500; color: var(--wp-text); margin-top: 10px; }
 .login input, .unlock input, .composer input {
-  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-  border-radius: 8px; padding: 10px 11px; width: 100%;
+  background: var(--wp-card); border: 1px solid var(--wp-line-strong); color: var(--wp-ink);
+  border-radius: var(--wp-r-sm); height: 48px; padding: 0 14px; width: 100%;
   /* 16px avoids iOS Safari zooming the page in on focus, which shoves the
      layout sideways just as the keyboard appears. */
   font-size: 16px;
+  transition: border-color 0.15s var(--wp-ease), box-shadow 0.15s var(--wp-ease);
 }
 .login input:focus, .unlock input:focus, .composer input:focus {
-  outline: none; border-color: var(--accent);
+  outline: none; border-color: var(--wp-accent); box-shadow: var(--wp-focus);
 }
 .login button, .unlock button, .composer button {
-  margin-top: 12px; background: var(--accent); color: #fff;
-  border: none; border-radius: 8px; padding: 10px 14px; font-weight: 600;
+  margin-top: 14px; height: 48px; padding: 0 22px;
+  background: var(--wp-accent); color: var(--wp-accent-ink);
+  border: none; border-radius: var(--wp-r-pill); font-weight: 600;
+  transition: background-color 0.15s var(--wp-ease), transform 0.15s var(--wp-ease), box-shadow 0.15s var(--wp-ease);
 }
-.login button:disabled, .composer button:disabled { opacity: .55; cursor: default; }
+.login button:hover, .unlock button:hover, .composer button:hover:not(:disabled) {
+  background: var(--wp-accent-hover); transform: translateY(-1px); box-shadow: var(--wp-shadow-1);
+}
+.login button:active, .unlock button:active, .composer button:active { transform: scale(0.98); box-shadow: none; }
+.login button:disabled, .composer button:disabled { opacity: 0.5; cursor: default; }
 
 /* --- shell ---------------------------------------------------------------- */
 .app { display: flex; flex-direction: column; height: var(--app-h); }
 .app-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+  height: 64px; padding: 0 20px; border-bottom: 1px solid var(--wp-line); background: var(--wp-card);
   flex-shrink: 0;
 }
+.app-head strong, .app-head h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
 .head-actions { display: flex; align-items: center; gap: 8px; }
 .ghost {
-  background: transparent; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px;
+  height: 36px; padding: 0 16px;
+  background: var(--wp-card); color: var(--wp-ink);
+  border: 1px solid var(--wp-line-strong); border-radius: var(--wp-r-pill); font-size: 14px; font-weight: 500;
+  transition: border-color 0.15s var(--wp-ease), color 0.15s var(--wp-ease), background-color 0.15s var(--wp-ease);
 }
-.ghost:hover { color: var(--text); border-color: var(--accent); }
+.ghost:hover { color: var(--wp-danger); border-color: var(--wp-danger); background: var(--wp-danger-soft); }
 .icon-btn {
-  background: transparent; border: 1px solid var(--line); border-radius: 8px;
-  color: var(--muted); padding: 6px 10px; line-height: 1;
+  width: 36px; height: 36px; padding: 0; display: grid; place-items: center;
+  background: var(--wp-card); border: 1px solid var(--wp-line-strong); border-radius: 50%;
+  color: var(--wp-muted); line-height: 1;
+  transition: border-color 0.15s var(--wp-ease), color 0.15s var(--wp-ease), transform 0.15s var(--wp-spring);
 }
-.icon-btn.on { color: var(--accent); border-color: var(--accent); }
+.icon-btn:hover { border-color: var(--wp-ink); color: var(--wp-ink); }
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.on { color: var(--wp-accent); border-color: var(--wp-accent-line); background: var(--wp-accent-soft); }
 
 .body { display: flex; flex: 1; min-height: 0; }
 
 /* --- sidebar -------------------------------------------------------------- */
 .sidebar {
-  width: 270px; flex-shrink: 0; border-right: 1px solid var(--line);
-  display: flex; flex-direction: column; min-height: 0; background: var(--panel);
+  width: 300px; flex-shrink: 0; border-right: 1px solid var(--wp-line);
+  display: flex; flex-direction: column; min-height: 0; background: var(--wp-bg);
 }
-.tabs { display: flex; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+/* the two lists as one segmented control */
+.tabs {
+  display: flex; gap: 4px; margin: 12px; padding: 4px; flex-shrink: 0;
+  background: var(--wp-surface); border-radius: var(--wp-r-pill);
+}
 .tabs button {
-  flex: 1; background: none; border: none; color: var(--muted);
-  padding: 11px 8px; font-size: 13px; border-bottom: 2px solid transparent;
+  flex: 1; height: 34px; background: none; border: none; border-radius: var(--wp-r-pill);
+  color: var(--wp-muted); font-size: 14px; font-weight: 500;
+  transition: background-color 0.18s var(--wp-ease), color 0.18s var(--wp-ease), box-shadow 0.18s var(--wp-ease);
 }
-.tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
-.list { overflow-y: auto; flex: 1; padding: 6px; }
+.tabs button:hover { color: var(--wp-ink); }
+.tabs button.active { background: var(--wp-card); color: var(--wp-ink); box-shadow: var(--wp-shadow-1); }
+.list { overflow-y: auto; flex: 1; padding: 0 8px 8px; }
+.list > * { animation: wp-rise 0.32s var(--wp-ease) both; }
+.list > *:nth-child(2) { animation-delay: 30ms; }
+.list > *:nth-child(3) { animation-delay: 60ms; }
+.list > *:nth-child(4) { animation-delay: 90ms; }
+.list > *:nth-child(n + 5) { animation-delay: 120ms; }
 
 .row {
   display: block; width: 100%; text-align: left; background: none;
-  border: none; border-radius: 9px; padding: 9px 10px; color: var(--text);
+  border: 1px solid transparent; border-radius: var(--wp-r-md); padding: 11px 12px; color: var(--wp-ink);
+  transition: background-color 0.15s var(--wp-ease), border-color 0.15s var(--wp-ease), box-shadow 0.15s var(--wp-ease);
 }
-.row:hover { background: var(--panel-2); }
-.row.selected { background: var(--accent-soft); }
-.row-top { display: flex; align-items: center; gap: 7px; }
-.row-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row:hover { background: var(--wp-card); border-color: var(--wp-line); }
+.row.selected { background: var(--wp-card); border-color: var(--wp-line-strong); box-shadow: var(--wp-shadow-1); }
+.row-top { display: flex; align-items: center; gap: 8px; }
+.row-name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-sub {
-  color: var(--muted); font-size: 12px; margin-top: 2px; padding-left: 15px;
+  color: var(--wp-muted); font-size: 13px; margin-top: 2px; padding-left: 16px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--muted); }
-.dot.playing { background: var(--green); box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.16); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #b5b5b5; }
+.dot.playing { background: var(--wp-live); animation: wp-live 2s ease-out infinite; }
 .dot.paused { background: var(--amber); }
-.dot.off { background: #45455c; }
+.dot.off { background: #d4d4d4; }
 
 /* --- room ----------------------------------------------------------------- */
 /* min-height:0 is load-bearing: without it this flex item keeps its automatic
    minimum size, refuses to shrink, overflows .body — and because the shell sets
    overflow:hidden there is no page scroll to fall back on, so nothing scrolls
    at all. It bites on mobile first, where .body stacks into a column. */
-.main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.room { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--wp-card); }
+.room { display: flex; flex-direction: column; min-height: 0; flex: 1; animation: wp-rise 0.3s var(--wp-ease) both; }
 .room-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 18px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+  min-height: 64px; padding: 10px 20px; border-bottom: 1px solid var(--wp-line); flex-shrink: 0;
 }
 /* Shown only in the mobile master/detail layout; the base rule must precede
    the media query that reveals it. */
 .back {
-  display: none; align-items: center; background: transparent; border: none;
-  color: var(--muted); font-size: 18px; padding: 0 6px 0 0; line-height: 1;
+  display: none; align-items: center; justify-content: center;
+  width: 34px; height: 34px; margin-right: 4px; background: transparent; border: none; border-radius: 50%;
+  color: var(--wp-ink); font-size: 18px; padding: 0; line-height: 1;
 }
-.room-title { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.room-title h2 { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.head-meta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.head-stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.back:hover { background: var(--wp-surface); }
+.room-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.room-title h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-meta { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.head-stat { font-size: 13px; color: var(--wp-muted); white-space: nowrap; }
 .badge {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  padding: 3px 7px; border-radius: 999px; letter-spacing: .04em; flex-shrink: 0;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 10px; border-radius: var(--wp-r-pill); flex-shrink: 0;
 }
-.badge.live { background: rgba(46, 204, 113, 0.18); color: var(--green); }
-.badge.ended { background: #26263a; color: var(--muted); }
-.page-link { color: var(--muted); font-size: 12px; text-decoration: none; white-space: nowrap; }
-.page-link:hover { color: var(--accent); }
+.badge.live { background: var(--wp-accent-soft); color: var(--wp-accent); }
+.badge.ended { background: var(--wp-surface); color: var(--wp-muted); }
+.page-link {
+  color: var(--wp-ink); font-size: 13px; font-weight: 500; text-decoration: none; white-space: nowrap;
+  border-bottom: 1px solid var(--wp-line-strong); padding-bottom: 1px;
+  transition: border-color 0.15s var(--wp-ease), color 0.15s var(--wp-ease);
+}
+.page-link:hover { color: var(--wp-accent); border-color: var(--wp-accent); }
 
 /* Chat is the primary column and owns the height; details sit beside it. */
 .room-body { display: flex; flex: 1; min-height: 0; }
 
 .rail {
-  width: 240px; flex-shrink: 0; border-left: 1px solid var(--line);
-  overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 16px;
+  width: 260px; flex-shrink: 0; border-left: 1px solid var(--wp-line); background: var(--wp-bg);
+  overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 20px;
 }
-.rail-block h3 {
-  font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--muted); margin-bottom: 8px;
-}
+.rail-block h3 { font-size: 13px; font-weight: 600; color: var(--wp-muted); margin-bottom: 10px; }
 .rail-block h3 .count {
-  background: var(--accent-soft); color: #c3b9ff; border-radius: 999px;
-  padding: 1px 7px; margin-left: 5px; letter-spacing: 0;
+  background: var(--wp-card); color: var(--wp-ink); border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-pill); padding: 1px 8px; margin-left: 6px;
 }
-.rail-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 12.5px; }
-.rail-row .k { color: var(--muted); flex-shrink: 0; }
-.rail-row .v { text-align: right; overflow: hidden; text-overflow: ellipsis; }
-.rail-row .hint { display: block; color: var(--muted); font-size: 11px; }
+.rail-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 14px; }
+.rail-row .k { color: var(--wp-muted); flex-shrink: 0; }
+.rail-row .v { text-align: right; overflow: hidden; text-overflow: ellipsis; font-family: var(--wp-mono); font-size: 13px; }
+.rail-row .hint { display: block; color: var(--wp-muted); font-size: 12px; font-family: var(--wp-font); }
 
 .watchers { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  background: var(--panel-2); border: 1px solid var(--line);
-  border-radius: 999px; padding: 4px 10px; font-size: 12px;
+  background: var(--wp-card); border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-pill); padding: 4px 11px; font-size: 13px;
+  animation: wp-pop 0.24s var(--wp-spring) both;
 }
-.chip.host { border-color: var(--accent); color: #c3b9ff; }
+.chip.host { background: var(--wp-ink); border-color: var(--wp-ink); color: #fff; }
 
 .note {
-  background: var(--accent-soft); border: 1px solid var(--line);
-  border-radius: 9px; padding: 9px 11px; font-size: 12.5px; color: #c3b9ff;
+  background: var(--wp-card); border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-md); padding: 10px 12px; font-size: 13px; color: var(--wp-text);
 }
 
 /* --- chat ----------------------------------------------------------------- */
 .chat { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; position: relative; }
-.messages { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; overscroll-behavior: contain; }
+.messages { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px; overscroll-behavior: contain; }
 
-.day { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; }
-.day::before, .day::after { content: ''; height: 1px; background: var(--line); flex: 1; }
-.day span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.day { display: flex; align-items: center; gap: 12px; margin: 18px 0 12px; }
+.day::before, .day::after { content: ''; height: 1px; background: var(--wp-line); flex: 1; }
+.day span { font-size: 12px; font-weight: 500; color: var(--wp-muted); }
 
-.msg { max-width: 74%; margin-top: 2px; }
-.msg.lead { margin-top: 12px; }
+.msg { max-width: 74%; margin-top: 3px; animation: wp-rise 0.26s var(--wp-ease) both; }
+.msg.lead { margin-top: 14px; }
 .msg.mine { margin-left: auto; }
-.msg-head { display: flex; gap: 7px; align-items: baseline; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.msg-head { display: flex; gap: 8px; align-items: baseline; font-size: 12px; color: var(--wp-muted); margin-bottom: 4px; }
+.msg-head .at { font-family: var(--wp-mono); font-size: 11px; }
 .msg.mine .msg-head { justify-content: flex-end; }
-.who { font-weight: 700; color: #c3b9ff; }
-.msg.mine .who { color: var(--muted); }
+.who { font-weight: 600; color: var(--wp-ink); }
+.msg.mine .who { color: var(--wp-muted); }
 .msg .body {
-  background: var(--panel-2); border-radius: 12px; padding: 7px 11px;
+  background: var(--wp-surface); border-radius: 16px 16px 16px 6px; padding: 8px 13px;
   word-wrap: break-word; overflow-wrap: anywhere; width: fit-content;
 }
-.msg.mine .body { background: var(--accent); color: #fff; margin-left: auto; }
+.msg.mine .body { background: var(--wp-accent); color: #fff; margin-left: auto; border-radius: 16px 16px 6px 16px; }
 
 .jump {
-  position: absolute; left: 50%; transform: translateX(-50%); bottom: 68px;
-  background: var(--accent); color: #fff; border: none; border-radius: 999px;
-  padding: 7px 14px; font-size: 12px; font-weight: 600;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 80px;
+  height: 36px; padding: 0 16px;
+  background: var(--wp-ink); color: #fff; border: none; border-radius: var(--wp-r-pill);
+  font-size: 13px; font-weight: 600;
+  box-shadow: var(--wp-shadow-2);
+  animation: wp-pop 0.26s var(--wp-spring) both;
 }
+.jump:hover { background: #262626; }
 
 .composer {
-  display: flex; gap: 8px; padding: 10px 12px;
-  border-top: 1px solid var(--line); flex-shrink: 0; background: var(--panel);
+  display: flex; gap: 8px; padding: 12px 16px;
+  border-top: 1px solid var(--wp-line); flex-shrink: 0; background: var(--wp-card);
 }
-.composer input { flex: 1; }
+.composer input { flex: 1; border-radius: var(--wp-r-pill); }
 .composer button { margin-top: 0; flex-shrink: 0; }
 
-.unlock { padding: 24px; max-width: 400px; }
-.lock-title { font-weight: 700; margin-bottom: 6px; }
-.unlock p { margin: 0 0 12px; }
+.unlock { padding: 32px; max-width: 440px; animation: wp-rise 0.3s var(--wp-ease) both; }
+.lock-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+.unlock p { margin: 0 0 14px; }
 
 /* --- narrow --------------------------------------------------------------- */
 @media (max-width: 1000px) {
@@ -228,8 +280,8 @@ h1, h2, h3 { margin: 0; }
      the transcript. */
   .room-body { flex-direction: column-reverse; }
   .rail {
-    width: auto; border-left: none; border-bottom: 1px solid var(--line);
-    flex-direction: row; gap: 14px; padding: 10px 14px; overflow-x: auto;
+    width: auto; border-left: none; border-bottom: 1px solid var(--wp-line);
+    flex-direction: row; gap: 16px; padding: 12px 16px; overflow-x: auto;
   }
   .rail-block { flex-shrink: 0; }
   /* Fixed size in the column-reverse stack so it cannot squeeze the chat. */
@@ -247,4 +299,6 @@ h1, h2, h3 { margin: 0; }
   .back { display: inline-flex; }
   .msg { max-width: 88%; }
   .head-stat { display: none; }
+  .app-head { padding: 0 16px; }
+  .card { padding: 24px; }
 }

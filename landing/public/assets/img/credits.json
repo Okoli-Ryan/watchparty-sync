@@ -1,0 +1,77 @@
+{
+ "note": "Credits for the photographs in this folder: photos.mjs credits prints the footer block for the ones the pages use.",
+ "photos": [
+  {
+   "file": "photo-f62171462-960.jpg",
+   "files": [
+    "photo-f62171462-500.jpg",
+    "photo-f62171462-960.jpg"
+   ],
+   "id": "f62171462",
+   "alt": "Surfer under a wave (Unsplash)",
+   "by": "Jeremy Bishop tidesinourveins",
+   "licence": "CC0",
+   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Surfer_under_a_wave_(Unsplash).jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f47420510.jpg",
+   "files": [
+    "photo-f47420510-500.jpg",
+    "photo-f47420510-960.jpg",
+    "photo-f47420510.jpg"
+   ],
+   "id": "f47420510",
+   "alt": "Big Surfer riding a wave Colac Bay",
+   "by": "Ben Murrin",
+   "licence": "Public domain",
+   "licenceUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+   "page": "https://commons.wikimedia.org/wiki/File:Big_Surfer_riding_a_wave_Colac_Bay.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f117648128.jpg",
+   "files": [
+    "photo-f117648128-500.jpg",
+    "photo-f117648128-960.jpg",
+    "photo-f117648128.jpg"
+   ],
+   "id": "f117648128",
+   "alt": "Lake Mountain Landscape",
+   "by": "Bonnie Moreland",
+   "licence": "CC0",
+   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Lake_Mountain_Landscape.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f97504792-960.jpg",
+   "files": [
+    "photo-f97504792-500.jpg",
+    "photo-f97504792-960.jpg"
+   ],
+   "id": "f97504792",
+   "alt": "Football pitch in Shurskol settlement",
+   "by": "Sportsmentos",
+   "licence": "CC0",
+   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Football_pitch_in_Shurskol_settlement.jpg",
+   "source": "Wikimedia Commons"
+  },
+  {
+   "file": "photo-f195045529-960.jpg",
+   "files": [
+    "photo-f195045529-500.jpg",
+    "photo-f195045529-960.jpg"
+   ],
+   "id": "f195045529",
+   "alt": "Scenic landscape of Greek mountains and lake",
+   "by": "Jevonin1",
+   "licence": "CC0",
+   "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "page": "https://commons.wikimedia.org/wiki/File:Scenic_landscape_of_Greek_mountains_and_lake.jpg",
+   "source": "Wikimedia Commons"
+  }
+ ]
+}

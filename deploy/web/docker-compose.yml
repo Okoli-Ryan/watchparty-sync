@@ -1,0 +1,29 @@
+# WatchParty web (landing + dashboard) on the VPS, running a prebuilt image. Nothing is built here.
+# The deploy script sets WATCHPARTY_IMAGE, e.g.
+#   WATCHPARTY_IMAGE=ghcr.io/<owner>/<repo>-web:<commit-sha> docker compose up -d
+#
+# A separate compose project from the API (~/watchparty), so each deploys and rolls back on its own.
+# Both ports are published on the loopback interface only; Caddy in front does HTTPS.
+
+name: watchparty-web
+
+services:
+  web:
+    image: ${WATCHPARTY_IMAGE:?set WATCHPARTY_IMAGE, for example ghcr.io/owner/watchparty-aspnet-web:latest}
+    container_name: watchparty-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${LANDING_PORT:-8082}:8080"
+      - "127.0.0.1:${DASHBOARD_PORT:-8083}:8081"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    pids_limit: 50
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
