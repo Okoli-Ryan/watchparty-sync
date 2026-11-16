@@ -1,14 +1,19 @@
+/* The extension popup (and the base of the extension dashboard, which imports this file).
+   Tokens and motion: src/shared/theme.css, the landing page's system. */
+@import '../shared/theme.css';
+
+/* The old names, kept as aliases so the dashboard's stylesheet and any later rule read the theme. */
 :root {
-  --bg: #14141e;
-  --panel: #1e1e2c;
-  --panel-2: #262636;
-  --text: #f2f2f7;
-  --muted: #9a9ab0;
-  --accent: #6c5ce7;
-  --accent-hover: #7d6ef0;
-  --danger: #e74c6c;
-  --ok: #2ecc71;
-  --border: #33334a;
+  --bg: var(--wp-bg);
+  --panel: var(--wp-card);
+  --panel-2: var(--wp-surface);
+  --text: var(--wp-ink);
+  --muted: var(--wp-muted);
+  --accent: var(--wp-accent);
+  --accent-hover: var(--wp-accent-hover);
+  --danger: var(--wp-danger);
+  --ok: var(--wp-live);
+  --border: var(--wp-line);
 }
 
 * { box-sizing: border-box; }
@@ -16,109 +21,141 @@
 html, body {
   margin: 0;
   width: 340px;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  font: 400 14px/1.45 var(--wp-font);
+  background: var(--wp-bg);
+  color: var(--wp-ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-#root { padding: 14px; }
+#root { padding: 16px; }
+/* Each view (sign-in, rooms, new room, in a room) arrives with a short rise. */
+#root > * { animation: wp-rise 0.32s var(--wp-ease) both; }
 
-h1 { font-size: 16px; margin: 0 0 2px; }
-h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
-p { margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
+h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 2px; }
+h2 { font-size: 13px; font-weight: 500; color: var(--wp-muted); margin: 0 0 10px; }
+p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+a { color: var(--wp-accent); font-weight: 600; text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 10px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--wp-line);
 }
-.header .sub { font-size: 11px; color: var(--muted); }
+.header .sub { font-size: 12px; color: var(--wp-muted); margin-top: 2px; }
 
-label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+label { display: block; font-size: 13px; font-weight: 500; color: var(--wp-text); margin: 12px 0 6px; }
 
 input, select {
   width: 100%;
-  padding: 9px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 13px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--wp-r-sm);
+  border: 1px solid var(--wp-line-strong);
+  background: var(--wp-card);
+  color: var(--wp-ink);
+  font: 400 14px var(--wp-font);
+  transition: border-color 0.15s var(--wp-ease), box-shadow 0.15s var(--wp-ease);
 }
-input:focus, select:focus { outline: none; border-color: var(--accent); }
+input::placeholder { color: #9a9a9a; }
+input:hover, select:hover { border-color: rgb(10 10 10 / 0.3); }
+input:focus, select:focus { outline: none; border-color: var(--wp-accent); box-shadow: var(--wp-focus); }
 
+/* ---- buttons: one pill, filled for the main action, outlined for the rest ---------------- */
 button {
   width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--wp-accent);
+  border-radius: var(--wp-r-pill);
+  background: var(--wp-accent);
+  color: var(--wp-accent-ink);
+  font: 600 14px var(--wp-font);
   cursor: pointer;
-  margin-top: 12px;
+  margin-top: 14px;
+  transition: background-color 0.15s var(--wp-ease), border-color 0.15s var(--wp-ease),
+    transform 0.15s var(--wp-ease), box-shadow 0.15s var(--wp-ease);
 }
-button:hover { background: var(--accent-hover); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.secondary { background: var(--panel-2); border: 1px solid var(--border); }
-button.secondary:hover { background: var(--panel); }
-button.danger { background: var(--danger); }
+button:hover { background: var(--wp-accent-hover); border-color: var(--wp-accent-hover); transform: translateY(-1px); box-shadow: var(--wp-shadow-1); }
+button:active { transform: translateY(0) scale(0.98); box-shadow: none; }
+button:focus-visible { outline: none; box-shadow: var(--wp-focus); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+button.secondary { background: var(--wp-card); border-color: var(--wp-line-strong); color: var(--wp-ink); }
+button.secondary:hover { background: var(--wp-card); border-color: var(--wp-ink); }
+button.danger { background: var(--wp-danger); border-color: var(--wp-danger); }
+button.danger:hover { background: var(--wp-danger-hover); border-color: var(--wp-danger-hover); }
 button.link {
-  width: auto; background: none; color: var(--accent);
+  width: auto; height: auto; background: none; border: 0; color: var(--wp-accent);
   padding: 0; margin: 0; font-weight: 600;
 }
+button.link:hover { transform: none; box-shadow: none; text-decoration: underline; }
 button.btn-signout {
-  width: auto; margin: 0; padding: 6px 12px; font-size: 12px;
-  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  width: auto; height: 34px; margin: 0; padding: 0 14px; font-size: 13px;
+  background: var(--wp-card); border-color: var(--wp-line-strong); color: var(--wp-ink);
   white-space: nowrap; flex-shrink: 0;
 }
-button.btn-signout:hover { background: var(--danger); border-color: var(--danger); }
+button.btn-signout:hover { border-color: var(--wp-danger); color: var(--wp-danger); background: var(--wp-danger-soft); }
 
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }
 
+/* ---- cards: white, a hairline, a lift on hover ----------------------------------------- */
 .card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: var(--wp-card);
+  border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-md);
+  padding: 12px 14px;
   margin-bottom: 8px;
+  transition: transform 0.18s var(--wp-ease), box-shadow 0.18s var(--wp-ease), border-color 0.18s var(--wp-ease);
 }
+.room-list .card:hover { transform: translateY(-2px); box-shadow: var(--wp-shadow-1); border-color: var(--wp-line-strong); }
 
-.room {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
+.room { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .room .meta { min-width: 0; }
-.room .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.room .owner { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.room button { width: auto; margin: 0; padding: 7px 12px; font-size: 12px; }
+.room .name {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.room .owner { font-size: 12px; color: var(--wp-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room button { width: auto; height: 34px; margin: 0; padding: 0 14px; font-size: 13px; flex-shrink: 0; }
 
 .badge {
-  display: inline-block; font-size: 10px; font-weight: 700;
-  padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.4px;
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border-radius: var(--wp-r-pill);
 }
-.badge.owner { background: rgba(108,92,231,0.25); color: #b9aefc; }
-.badge.viewer { background: rgba(46,204,113,0.2); color: #7fe0a6; }
-.badge.ended { background: rgba(154,154,176,0.18); color: var(--muted); }
+.badge.owner { background: var(--wp-ink); color: #fff; }
+.badge.viewer { background: var(--wp-accent-soft); color: var(--wp-accent); }
+.badge.ended { background: var(--wp-surface); color: var(--wp-muted); }
 
-.card.ended { opacity: 0.62; }
+.card.ended { opacity: 0.65; }
 .dot {
-  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--muted); margin-right: 5px; vertical-align: middle;
+  display: inline-block; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
+  background: #b5b5b5; margin-right: 6px; vertical-align: middle;
 }
-.dot.live { background: var(--ok); box-shadow: 0 0 0 3px rgba(46,204,113,0.18); }
+.dot.live { background: var(--wp-live); animation: wp-live 2s ease-out infinite; }
 
-.alert { padding: 8px 10px; border-radius: 8px; font-size: 12px; margin: 8px 0; }
-.alert.error { background: rgba(231,76,108,0.15); color: #f2a3b5; border: 1px solid rgba(231,76,108,0.35); }
-.alert.ok { background: rgba(46,204,113,0.15); color: #8fe6b0; border: 1px solid rgba(46,204,113,0.35); }
-.alert.info { background: rgba(108,92,231,0.15); color: #b9aefc; border: 1px solid rgba(108,92,231,0.35); }
+/* ---- notices --------------------------------------------------------------------------- */
+.alert {
+  padding: 10px 12px; border-radius: var(--wp-r-sm); font-size: 13px; line-height: 1.45; margin: 10px 0;
+  border: 1px solid transparent; animation: wp-rise 0.28s var(--wp-ease) both;
+}
+.alert.error { background: var(--wp-danger-soft); color: var(--wp-danger); border-color: var(--wp-danger-line); }
+.alert.ok { background: var(--wp-accent-soft); color: var(--wp-accent); border-color: var(--wp-accent-line); }
+.alert.info { background: var(--wp-card); color: var(--wp-text); border-color: var(--wp-line); }
 
-.muted { color: var(--muted); font-size: 12px; }
-.mono { font-family: ui-monospace, Menlo, monospace; font-size: 11px; word-break: break-all; }
-.empty { text-align: center; color: var(--muted); font-size: 12px; padding: 20px 0; }
+.muted { color: var(--wp-muted); font-size: 13px; }
+.mono { font-family: var(--wp-mono); font-size: 12px; color: var(--wp-text); word-break: break-all; }
+.empty {
+  text-align: center; color: var(--wp-muted); font-size: 13px; padding: 22px 12px;
+  border: 1px dashed var(--wp-line-strong); border-radius: var(--wp-r-md);
+}
 .spacer { height: 4px; }
+
+/* the loading state of the room list: three quiet rows */
+.skeleton-list { display: grid; gap: 8px; }
+.skeleton-list .wp-skeleton { height: 58px; }

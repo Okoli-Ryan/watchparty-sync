@@ -1,0 +1,114 @@
+/*
+  WatchParty theme: the landing page's design system (landing/public/palette.css) carried into
+  the extension popup, the extension dashboard and the web dashboard. The on-page widget and the
+  video picker use the same values in src/content/theme.ts (a shadow root and inline styles can't
+  read this file).
+
+  Off-white ground, near-black ink, one green accent; Urbanist for text and DM Mono for times.
+  The interface stays neutral so the videos carry the colour. Fonts are bundled, never fetched
+  from Google, so extension pages make no third-party requests.
+*/
+@import '@fontsource-variable/urbanist';
+@import '@fontsource/dm-mono/400.css';
+@import '@fontsource/dm-mono/500.css';
+
+:root {
+  --wp-bg: #f8f8f8;
+  --wp-surface: #eeeeee;
+  --wp-card: #ffffff;
+  --wp-ink: #0a0a0a;
+  --wp-text: #262626;
+  --wp-muted: #6a6a6a;
+  --wp-line: rgb(10 10 10 / 0.1);
+  --wp-line-strong: rgb(10 10 10 / 0.18);
+
+  --wp-accent: #1f6b3a;
+  --wp-accent-hover: #185530;
+  --wp-accent-ink: #ffffff;
+  --wp-accent-soft: rgb(31 107 58 / 0.1);
+  --wp-accent-line: rgb(31 107 58 / 0.35);
+  --wp-live: #2f9a57;
+
+  --wp-warn: #8a5a00;
+  --wp-warn-soft: #fdf3df;
+  --wp-danger: #b42318;
+  --wp-danger-hover: #93190f;
+  --wp-danger-soft: rgb(180 35 24 / 0.08);
+  --wp-danger-line: rgb(180 35 24 / 0.3);
+
+  --wp-font: 'Urbanist Variable', 'Urbanist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --wp-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --wp-r-sm: 10px;
+  --wp-r-md: 16px;
+  --wp-r-lg: 24px;
+  --wp-r-pill: 999px;
+
+  /* the landing's two lifts: a resting card, and a piece standing off the page */
+  --wp-shadow-1: 0 1px 2px rgb(0 0 0 / 0.05), 0 10px 28px -16px rgb(0 0 0 / 0.22);
+  --wp-shadow-2: 0 1px 2px rgb(0 0 0 / 0.1), 0 22px 48px -22px rgb(0 0 0 / 0.4);
+  --wp-focus: 0 0 0 3px rgb(31 107 58 / 0.22);
+
+  --wp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --wp-spring: cubic-bezier(0.2, 1.3, 0.4, 1);
+
+  color-scheme: light;
+}
+
+/* ---- motion: short, purposeful, and gone under reduced motion ------------------------- */
+
+/* a view or a card arriving */
+@keyframes wp-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+/* a panel or popover opening */
+@keyframes wp-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+/* a live room's dot breathing */
+@keyframes wp-live {
+  0% { box-shadow: 0 0 0 0 rgb(47 154 87 / 0.45); }
+  70% { box-shadow: 0 0 0 7px rgb(47 154 87 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(47 154 87 / 0); }
+}
+/* a loading placeholder */
+@keyframes wp-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes wp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Children of a list arrive one after another, then stop. */
+.wp-stagger > * { animation: wp-rise 0.36s var(--wp-ease) both; }
+.wp-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.wp-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.wp-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.wp-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.wp-stagger > *:nth-child(n + 6) { animation-delay: 200ms; }
+
+/* A loading row: a quiet shimmer in place of a "Loading…" line. */
+.wp-skeleton {
+  border-radius: var(--wp-r-md);
+  background: linear-gradient(90deg, var(--wp-surface) 25%, #f6f6f6 50%, var(--wp-surface) 75%);
+  background-size: 200% 100%;
+  animation: wp-shimmer 1.4s linear infinite;
+}
+
+/* A small spinner inside a busy button. */
+.wp-spinner {
+  display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 8px;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: wp-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

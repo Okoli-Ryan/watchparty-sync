@@ -2,6 +2,7 @@ import type { RoomInfo } from '../shared/messages';
 import type { ChatMessage } from '../shared/types';
 import { CHAT_MAX_LEN } from '../shared/constants';
 import { beep } from '../shared/beep';
+import { T, loadWidgetFont } from './theme';
 
 // Floating on-page widget: a small pill that expands into a status panel.
 // Rendered inside a shadow root so the host page's CSS can't reach it — these
@@ -74,11 +75,14 @@ export class Widget {
   private builtFor: string | null = null;
   /** Size at the previous render, so a resize can re-anchor before it clips. */
   private lastSize: { w: number; h: number } | null = null;
+  /** Message ids already drawn, so only new ones animate in (the list is redrawn on every update). */
+  private drawnMessageIds: Set<string> | null = null;
 
   constructor(private cbs: WidgetCallbacks) {}
 
   mount() {
     if (this.host || !document.body) return;
+    loadWidgetFont();
     this.host = document.createElement('div');
     this.host.id = HOST_ID;
     // The host element itself must not intercept clicks outside the widget.
@@ -365,8 +369,16 @@ export class Widget {
       this.reflow();
       return;
     }
+    // Switching between the pill and the panel animates in; rebuilding the same kind (chat
+    // toggled, a host handoff) does not, so the panel never jumps under the user's hand.
+    const kindChanged = this.builtFor?.split(':')[0] !== signature.split(':')[0];
     this.builtFor = signature;
     this.build(wrap as HTMLElement);
+    if (kindChanged) {
+      wrap.classList.remove('enter');
+      void (wrap as HTMLElement).offsetWidth;
+      wrap.classList.add('enter');
+    }
     this.reflow();
   }
 
@@ -448,11 +460,13 @@ export class Widget {
     const list = wrap.querySelector<HTMLElement>('.messages');
     if (!list) return;
     const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+    const drawn = this.drawnMessageIds;
+    this.drawnMessageIds = new Set(this.messages.map((m) => m.id));
     list.innerHTML = this.messages.length
       ? this.messages
           .map(
             (m) => `
-        <div class="msg${m.senderUid === this.info?.myUid ? ' mine' : ''}">
+        <div class="msg${m.senderUid === this.info?.myUid ? ' mine' : ''}${drawn && !drawn.has(m.id) ? ' new' : ''}">
           <span class="who">${esc(m.senderName)}</span>
           <span class="body">${renderBody(m.text, this.info?.duration ?? 0)}</span>
         </div>`,
@@ -727,7 +741,7 @@ function membersHtml(i: RoomInfo): string {
 
 /** "owner" is the internal term; the UI says HOST everywhere. */
 function roleLabel(role: RoomInfo['role']): string {
-  return role === 'owner' ? 'HOST' : 'VIEWER';
+  return role === 'owner' ? 'Host' : 'Viewer';
 }
 
 function esc(s: string): string {
@@ -738,34 +752,66 @@ function shorten(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
+// Themed from src/content/theme.ts: the landing page's system (white card, near-black ink, one
+// green accent, Urbanist) drawn over whatever the page shows. Every size here stays readable
+// over video: 11px is the floor, and text sits on the card, never on the footage.
 const CSS = `
 :host, * { box-sizing: border-box; }
-.wrap { font-family: system-ui, -apple-system, sans-serif; }
+.wrap { font-family: ${T.font}; color: ${T.ink}; -webkit-font-smoothing: antialiased; }
 .hide { display: none !important; }
+button { font-family: inherit; }
+button:focus-visible, input:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(31 107 58 / .3); }
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(8px) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes live {
+  0%   { box-shadow: 0 0 0 0 rgb(47 154 87 / .5); }
+  70%  { box-shadow: 0 0 0 7px rgb(47 154 87 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(47 154 87 / 0); }
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(180 35 24 / .5), 0 2px 8px rgb(0 0 0 / .25); }
+  50%      { box-shadow: 0 0 0 7px rgb(180 35 24 / 0), 0 2px 8px rgb(0 0 0 / .25); }
+}
+/* Pill <-> panel: the new one pops in from its anchor corner. */
+.wrap.enter .pillrow, .wrap.enter .panel { animation: pop .26s ${T.spring} both; }
 
 /* --- collapsed row: reaction button + pill --------------------------------- */
-.pillrow { display: flex; align-items: center; gap: 7px; }
+.pillrow { display: flex; align-items: center; gap: 8px; position: relative; }
 
 .react {
-  width: 34px; height: 34px; flex-shrink: 0;
-  border: none; border-radius: 50%;
-  background: rgba(20,20,30,0.94); color: #fff;
-  font-size: 16px; line-height: 1; cursor: pointer;
-  box-shadow: 0 6px 22px rgba(0,0,0,0.45);
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border: 1px solid ${T.line}; border-radius: 50%;
+  background: ${T.card}; color: ${T.ink};
+  font-size: 18px; line-height: 1; cursor: pointer;
+  box-shadow: ${T.shadow};
+  transition: transform .18s ${T.spring}, border-color .15s ${T.ease};
 }
-.react:hover { background: #2a2a3d; }
+.react:hover { transform: translateY(-2px) rotate(-8deg); border-color: ${T.lineStrong}; }
+.react:active { transform: scale(.92); }
 
 .picker {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-  margin-bottom: 8px; padding: 7px;
-  background: rgba(20,20,30,0.97); border: 1px solid #33334a;
-  border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  margin-bottom: 10px; padding: 8px;
+  background: ${T.card}; border: 1px solid ${T.line};
+  border-radius: 18px; box-shadow: ${T.shadow};
+  animation: pop .22s ${T.spring} both;
+  transform-origin: bottom left;
 }
 .emoji {
-  border: none; border-radius: 8px; background: transparent;
-  font-size: 19px; line-height: 1; padding: 6px; cursor: pointer;
+  border: none; border-radius: 12px; background: transparent;
+  font-size: 20px; line-height: 1; padding: 7px; cursor: pointer;
+  transition: transform .16s ${T.spring}, background-color .15s ${T.ease};
 }
-.emoji:hover { background: rgba(108,92,231,.35); transform: scale(1.12); }
+.emoji:hover { background: ${T.surface}; transform: scale(1.18); }
+.emoji:active { transform: scale(.94); }
 
 /* --- incoming reaction popups --------------------------------------------- */
 .toasts {
@@ -774,166 +820,169 @@ const CSS = `
   pointer-events: none;
 }
 .toast {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 12px 7px 10px; border-radius: 999px;
-  background: rgba(20,20,30,0.95); border: 1px solid #33334a;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
-  animation: pop .26s cubic-bezier(.2,1.3,.4,1);
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px 7px 10px; border-radius: 999px;
+  background: ${T.card}; border: 1px solid ${T.line};
+  box-shadow: ${T.shadow};
+  animation: pop .3s ${T.spring} both;
   white-space: nowrap;
 }
-.toast.out { opacity: 0; transform: translateY(-6px); transition: all .26s ease; }
-.t-emoji { font-size: 19px; line-height: 1; }
-.t-who { font: 600 11px/1 system-ui, sans-serif; color: #b9aefc; }
-@keyframes pop {
-  from { opacity: 0; transform: translateY(8px) scale(.85); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
+.toast.out { opacity: 0; transform: translateY(-8px) scale(.96); transition: all .26s ${T.ease}; }
+.t-emoji { font-size: 20px; line-height: 1; }
+.t-who { font: 600 12px/1 ${T.font}; color: ${T.ink}; }
 
 .pill {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; border: none; border-radius: 999px;
-  background: rgba(20,20,30,0.94); color: #fff;
-  font: 600 13px/1 system-ui, sans-serif; cursor: pointer;
-  box-shadow: 0 6px 22px rgba(0,0,0,0.45);
-  backdrop-filter: blur(6px);
+  height: 40px; padding: 0 8px 0 14px;
+  border: 1px solid ${T.line}; border-radius: 999px;
+  background: ${T.card}; color: ${T.ink};
+  font: 600 14px/1 ${T.font}; cursor: pointer;
+  box-shadow: ${T.shadow};
+  transition: transform .18s ${T.ease}, border-color .15s ${T.ease};
 }
-.pill:hover { background: #2a2a3d; }
-.pill-text { white-space: nowrap; }
+.pill:hover { transform: translateY(-2px); border-color: ${T.lineStrong}; }
+.pill-text { white-space: nowrap; letter-spacing: -.01em; }
 .count {
-  background: #6c5ce7; border-radius: 999px;
-  padding: 2px 7px; font-size: 11px; font-weight: 700;
+  min-width: 24px; height: 24px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: ${T.surface}; color: ${T.ink}; border-radius: 999px;
+  font: 600 12px/1 ${T.font};
 }
 /* Role chip on the collapsed pill, so host/viewer is visible without expanding. */
-.role {
-  font-size: 9px; font-weight: 800; letter-spacing: .6px;
-  padding: 3px 6px; border-radius: 4px; flex-shrink: 0;
-}
-.role.owner { background: rgba(108,92,231,.32); color: #c3b9ff; }
-.role.viewer { background: rgba(46,204,113,.24); color: #7fe0a6; }
+.role { font: 600 11px/1 ${T.font}; padding: 5px 8px; border-radius: 999px; flex-shrink: 0; }
+.role.owner { background: ${T.ink}; color: #fff; }
+.role.viewer { background: ${T.accentSoft}; color: ${T.accent}; }
 .dot {
   width: 8px; height: 8px; border-radius: 50%;
-  background: #9a9ab0; flex-shrink: 0;
+  background: #b5b5b5; flex-shrink: 0;
+  transition: background-color .2s ${T.ease};
 }
-.dot.playing { background: #2ecc71; box-shadow: 0 0 0 3px rgba(46,204,113,0.22); }
+.dot.playing { background: ${T.live}; animation: live 2s ease-out infinite; }
 
 .panel {
-  width: 232px; padding: 14px;
+  width: 260px; padding: 16px;
   /* Never taller than the viewport: the roster and chat both grow, and without
      a cap the panel simply ran off the bottom of the screen. */
   max-height: calc(100vh - 24px);
   overflow-y: auto; overscroll-behavior: contain;
-  transition: width .16s ease;
-  background: rgba(20,20,30,0.97); color: #f2f2f7;
-  border: 1px solid #33334a; border-radius: 12px;
-  box-shadow: 0 10px 34px rgba(0,0,0,0.5);
-  backdrop-filter: blur(8px);
+  transition: width .22s ${T.ease};
+  background: ${T.card}; color: ${T.ink};
+  border: 1px solid ${T.line}; border-radius: 22px;
+  box-shadow: ${T.shadow};
 }
-.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel::-webkit-scrollbar { width: 6px; }
+.panel::-webkit-scrollbar-thumb { background: ${T.lineStrong}; border-radius: 3px; }
+.head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding-bottom: 12px; border-bottom: 1px solid ${T.line};
+}
 .title {
-  font-size: 13px; font-weight: 700; overflow: hidden;
+  font-size: 16px; font-weight: 600; letter-spacing: -.015em; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
 }
 .close {
-  background: none; border: none; color: #9a9ab0;
-  font-size: 19px; line-height: 1; cursor: pointer; padding: 0 2px;
+  width: 30px; height: 30px; flex-shrink: 0; display: grid; place-items: center;
+  background: none; border: none; border-radius: 50%; color: ${T.muted};
+  font-size: 20px; line-height: 1; cursor: pointer;
+  transition: background-color .15s ${T.ease}, color .15s ${T.ease};
 }
-.close:hover { color: #fff; }
+.close:hover { background: ${T.surface}; color: ${T.ink}; }
 
-.rows { margin-top: 10px; display: grid; gap: 6px; }
-.row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-.k { color: #9a9ab0; }
+.rows { margin-top: 12px; display: grid; gap: 8px; }
+.row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.k { color: ${T.muted}; }
 .v { font-weight: 600; }
-.badge {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .4px; padding: 2px 7px; border-radius: 999px;
-}
-.badge.owner { background: rgba(108,92,231,.28); color: #b9aefc; }
-.badge.viewer { background: rgba(46,204,113,.22); color: #7fe0a6; }
+.badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+.badge.owner { background: ${T.ink}; color: #fff; }
+.badge.viewer { background: ${T.accentSoft}; color: ${T.accent}; }
 
-.hint { margin-top: 10px; font-size: 11px; color: #9a9ab0; line-height: 1.4; }
-.muted { color: #9a9ab0; font-size: 12px; }
+.hint { margin-top: 10px; font-size: 12px; color: ${T.muted}; line-height: 1.45; }
+.muted { color: ${T.muted}; font-size: 12px; }
 .err {
-  margin-top: 10px; padding: 8px 9px; border-radius: 7px; font-size: 11px;
-  background: rgba(231,76,108,.15); color: #f2a3b5;
-  border: 1px solid rgba(231,76,108,.35); line-height: 1.4;
+  margin-top: 12px; padding: 10px 11px; border-radius: 12px; font-size: 12px;
+  background: ${T.dangerSoft}; color: ${T.danger};
+  border: 1px solid rgb(180 35 24 / .3); line-height: 1.45;
+  animation: rise .24s ${T.ease} both;
 }
 .retry {
-  display: block; margin-top: 7px; padding: 6px 10px;
-  border: 1px solid rgba(231,76,108,.5); border-radius: 6px;
-  background: rgba(231,76,108,.2); color: #ffd3dd;
-  font: 600 11px/1 system-ui, sans-serif; cursor: pointer;
+  display: block; margin-top: 8px; height: 30px; padding: 0 12px;
+  border: 1px solid ${T.danger}; border-radius: 999px;
+  background: ${T.card}; color: ${T.danger};
+  font: 600 12px/1 ${T.font}; cursor: pointer;
 }
-.retry:hover { background: rgba(231,76,108,.35); }
+.retry:hover { background: ${T.danger}; color: #fff; }
 
 /* Chat makes the panel meaningfully bigger so the transcript is readable. */
-.panel.with-chat { width: 330px; }
+.panel.with-chat { width: 344px; }
 
-.chat { margin-top: 12px; border-top: 1px solid #33334a; padding-top: 10px; }
+.chat { margin-top: 14px; border-top: 1px solid ${T.line}; padding-top: 12px; }
 .messages {
   height: 260px; overflow-y: auto; overflow-x: hidden;
-  display: flex; flex-direction: column; gap: 7px;
+  display: flex; flex-direction: column; gap: 8px;
   padding-right: 4px;
 }
 .messages::-webkit-scrollbar { width: 6px; }
-.messages::-webkit-scrollbar-thumb { background: #3d3d55; border-radius: 3px; }
+.messages::-webkit-scrollbar-thumb { background: ${T.lineStrong}; border-radius: 3px; }
 
-.msg { font-size: 12px; line-height: 1.35; word-break: break-word; }
-.msg .who { color: #b9aefc; font-weight: 700; margin-right: 5px; }
-.msg.mine .who { color: #7fe0a6; }
-.msg .body { color: #e8e8f0; }
+.msg {
+  align-self: flex-start; max-width: 88%;
+  padding: 7px 11px; border-radius: 14px 14px 14px 4px;
+  background: ${T.surface};
+  font-size: 13px; line-height: 1.4; word-break: break-word;
+}
+.msg.mine { align-self: flex-end; background: ${T.accent}; color: #fff; border-radius: 14px 14px 4px 14px; }
+.msg.new { animation: rise .26s ${T.ease} both; }
+.msg .who { display: block; color: ${T.muted}; font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+.msg.mine .who { color: rgb(255 255 255 / .75); }
+.msg .body { color: inherit; }
 
 /* Clickable timestamp inside a message. */
 .ts {
-  display: inline; padding: 1px 5px; margin: 0 1px;
-  border: 1px solid rgba(108,92,231,.55); border-radius: 4px;
-  background: rgba(108,92,231,.22); color: #c9c0ff;
-  font: 600 11px/1.3 ui-monospace, Menlo, monospace;
+  display: inline; padding: 1px 6px; margin: 0 1px;
+  border: 1px solid ${T.lineStrong}; border-radius: 6px;
+  background: ${T.card}; color: ${T.ink};
+  font: 500 12px/1.3 ${T.mono};
   cursor: pointer; vertical-align: baseline;
+  transition: background-color .15s ${T.ease}, color .15s ${T.ease};
 }
-.ts:hover { background: rgba(108,92,231,.45); color: #fff; }
-.ts.jumped { background: rgba(46,204,113,.4); border-color: rgba(46,204,113,.6); color: #fff; }
-.empty-chat { color: #9a9ab0; font-size: 12px; text-align: center; padding: 16px 0; }
+.ts:hover { background: ${T.ink}; color: #fff; border-color: ${T.ink}; }
+.msg.mine .ts { background: rgb(255 255 255 / .16); color: #fff; border-color: rgb(255 255 255 / .35); }
+.ts.jumped { background: ${T.live}; border-color: ${T.live}; color: #fff; animation: pop .3s ${T.spring}; }
+.empty-chat { color: ${T.muted}; font-size: 13px; text-align: center; padding: 18px 0; }
 
-.composer { display: flex; gap: 6px; margin-top: 9px; }
+.composer { display: flex; gap: 6px; margin-top: 10px; }
 .chat-input {
-  flex: 1; min-width: 0; padding: 8px 10px;
-  border: 1px solid #33334a; border-radius: 8px;
-  background: #262636; color: #f2f2f7;
-  font: 400 12px/1 system-ui, sans-serif;
+  flex: 1; min-width: 0; height: 38px; padding: 0 14px;
+  border: 1px solid ${T.lineStrong}; border-radius: 999px;
+  background: ${T.card}; color: ${T.ink};
+  font: 400 13px/1 ${T.font};
+  transition: border-color .15s ${T.ease}, box-shadow .15s ${T.ease};
 }
-.chat-input:focus { outline: none; border-color: #6c5ce7; }
+.chat-input:focus { outline: none; border-color: ${T.accent}; box-shadow: 0 0 0 3px rgb(31 107 58 / .18); }
 .send {
-  border: none; border-radius: 8px; background: #6c5ce7; color: #fff;
-  padding: 0 12px; cursor: pointer; font-size: 12px;
+  width: 38px; height: 38px; flex-shrink: 0;
+  border: none; border-radius: 50%; background: ${T.accent}; color: #fff;
+  cursor: pointer; font-size: 13px;
+  transition: background-color .15s ${T.ease}, transform .15s ${T.spring};
 }
-.send:hover { background: #7d6ef0; }
+.send:hover { background: ${T.accentHover}; transform: translateX(2px); }
+.send:active { transform: scale(.9); }
 
 /* --- unread indicator ------------------------------------------------------ */
-.pillrow { position: relative; }
 .unread {
   position: absolute; top: -6px; right: -6px;
-  min-width: 19px; height: 19px; padding: 0 5px;
+  min-width: 20px; height: 20px; padding: 0 6px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 999px; background: #e74c6c; color: #fff;
-  font: 800 10px/1 system-ui, sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+  border-radius: 999px; background: ${T.danger}; color: #fff;
+  font: 700 11px/1 ${T.font};
   pointer-events: none;
-  animation: pulse 1.6s ease-in-out infinite;
+  animation: pop .3s ${T.spring} both, pulse 1.8s ease-in-out .3s infinite;
 }
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,108,.65), 0 2px 8px rgba(0,0,0,.4); }
-  50%      { box-shadow: 0 0 0 7px rgba(231,76,108,0),  0 2px 8px rgba(0,0,0,.4); }
-}
-/* Respect users who ask for reduced motion — keep the badge, drop the pulse. */
-@media (prefers-reduced-motion: reduce) {
-  .unread { animation: none; }
-}
-
 .tbadge {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 17px; height: 17px; margin-left: 6px; padding: 0 5px;
-  border-radius: 999px; background: #e74c6c; color: #fff;
-  font: 800 10px/1 system-ui, sans-serif;
+  min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px;
+  border-radius: 999px; background: ${T.danger}; color: #fff;
+  font: 700 11px/1 ${T.font};
 }
 
 /* Drag handles */
@@ -942,47 +991,50 @@ const CSS = `
 .head { cursor: grab; user-select: none; }
 .head:active { cursor: grabbing; }
 
-.reselect {
-  width: 100%; margin-top: 8px; padding: 9px;
-  border: 1px solid rgba(46,204,113,.5); border-radius: 8px;
-  background: rgba(46,204,113,.16); color: #8fe6b0;
-  font: 600 12px/1 system-ui, sans-serif; cursor: pointer;
+/* --- actions: one filled button per role, the rest outlined pills --------- */
+.resync, .reselect {
+  width: 100%; height: 38px; margin-top: 12px; padding: 0 14px;
+  border: 1px solid ${T.accent}; border-radius: 999px;
+  background: ${T.accent}; color: #fff;
+  font: 600 13px/1 ${T.font}; cursor: pointer;
+  transition: background-color .15s ${T.ease}, transform .15s ${T.ease};
 }
-.reselect:hover { background: rgba(46,204,113,.3); }
+.resync:hover, .reselect:hover { background: ${T.accentHover}; transform: translateY(-1px); }
+.resync:active, .reselect:active { transform: scale(.98); }
 
-.members { margin-top: 10px; border-top: 1px solid #33334a; padding-top: 9px; }
-.members-h {
-  font-size: 10px; font-weight: 700; letter-spacing: .5px;
-  text-transform: uppercase; color: #9a9ab0; margin-bottom: 6px;
-}
+.members { margin-top: 14px; border-top: 1px solid ${T.line}; padding-top: 12px; }
+.members-h { font-size: 12px; font-weight: 600; color: ${T.muted}; margin-bottom: 8px; }
 .mk {
-  display: block; width: 100%; margin-bottom: 5px; padding: 7px 9px;
-  border: 1px solid #33334a; border-radius: 7px;
-  background: #262636; color: #f2f2f7;
-  font: 600 11px/1 system-ui, sans-serif; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 6px; height: 36px; padding: 0 12px;
+  border: 1px solid ${T.line}; border-radius: 12px;
+  background: ${T.card}; color: ${T.ink};
+  font: 500 13px/1 ${T.font}; cursor: pointer;
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: border-color .15s ${T.ease}, background-color .15s ${T.ease};
 }
-.mk:hover { background: rgba(108,92,231,.35); border-color: rgba(108,92,231,.6); }
-.members-none { font-size: 11px; color: #9a9ab0; }
+.mk::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: ${T.live}; flex-shrink: 0; }
+.mk:hover { border-color: ${T.accent}; background: ${T.accentSoft}; }
+.members-none { font-size: 12px; color: ${T.muted}; }
 
-.resync {
-  width: 100%; margin-top: 12px; padding: 9px;
-  border: 1px solid rgba(108,92,231,.55); border-radius: 8px;
-  background: rgba(108,92,231,.18); color: #c3b9ff;
-  font: 600 12px/1 system-ui, sans-serif; cursor: pointer;
-}
-.resync:hover { background: rgba(108,92,231,.32); }
-
-.actions { display: flex; gap: 8px; margin-top: 8px; }
+.actions { display: flex; gap: 8px; margin-top: 10px; }
 .chat-toggle, .dash, .leave {
-  padding: 9px; border: none; border-radius: 8px;
-  font: 600 12px/1 system-ui, sans-serif; cursor: pointer;
+  height: 38px; padding: 0 12px; border-radius: 999px;
+  font: 600 13px/1 ${T.font}; cursor: pointer;
+  transition: border-color .15s ${T.ease}, background-color .15s ${T.ease}, color .15s ${T.ease};
 }
 .chat-toggle, .dash {
-  flex: 1; background: #262636; color: #f2f2f7; border: 1px solid #33334a;
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  background: ${T.card}; color: ${T.ink}; border: 1px solid ${T.lineStrong};
   white-space: nowrap;
 }
-.chat-toggle:hover, .dash:hover { background: #2f2f44; }
-.leave { width: 100%; margin-top: 8px; background: #e74c6c; color: #fff; }
-.leave:hover { background: #f25d7c; }
+.chat-toggle:hover, .dash:hover { border-color: ${T.ink}; }
+.leave {
+  width: 100%; margin-top: 8px;
+  background: transparent; color: ${T.danger}; border: 1px solid transparent;
+}
+.leave:hover { background: ${T.dangerSoft}; border-color: rgb(180 35 24 / .3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 `;

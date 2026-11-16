@@ -1,5 +1,5 @@
-/* Full-page dashboard. The popup stylesheet pins html/body to the 340px popup
-   width, so those constraints are undone here. */
+/* Full-page extension dashboard, on top of the popup stylesheet (which brings the theme).
+   The popup pins html/body to its 340px width, so that is undone here. */
 
 html, body.dashboard {
   width: auto;
@@ -7,95 +7,115 @@ html, body.dashboard {
 }
 
 body.dashboard #root {
-  max-width: 900px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 48px 32px 96px;
 }
 
 .dash-head {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 18px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--wp-line);
 }
-.dash-head h1 { font-size: 22px; margin-bottom: 4px; }
-.dash-head .sub { font-size: 13px; color: var(--muted); }
-.dash-head button { width: auto; margin: 0; padding: 8px 14px; }
+.dash-head h1 { font-size: 40px; font-weight: 500; letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 8px; }
+.dash-head .sub { font-size: 15px; color: var(--wp-muted); }
+.dash-head button { width: auto; margin: 0; }
 
-.dash-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+/* Tabs as one segmented control: the active tab is the white piece standing off the ground. */
+.dash-tabs {
+  display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 28px;
+  background: var(--wp-surface); border-radius: var(--wp-r-pill);
+}
 .dash-tabs button {
-  width: auto; margin: 0; padding: 9px 18px; font-size: 13px;
-  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  width: auto; height: 38px; margin: 0; padding: 0 18px; font-size: 14px; font-weight: 500;
+  background: transparent; border-color: transparent; color: var(--wp-muted);
 }
-.dash-tabs button.active { background: var(--accent); border-color: var(--accent); }
+.dash-tabs button:hover { background: rgb(255 255 255 / 0.6); border-color: transparent; color: var(--wp-ink); transform: none; box-shadow: none; }
+.dash-tabs button.active { background: var(--wp-card); color: var(--wp-ink); box-shadow: var(--wp-shadow-1); }
 
-.dash-section h2 { font-size: 15px; color: var(--text); margin-bottom: 14px; }
+.dash-section { animation: wp-rise 0.32s var(--wp-ease) both; }
+.dash-section h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; color: var(--wp-ink); margin-bottom: 18px; }
 
-/* Room cards laid out as a responsive grid instead of the popup's single column. */
+/* Room cards as a responsive grid, arriving one after another. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
+.grid > * { animation: wp-rise 0.36s var(--wp-ease) both; }
+.grid > *:nth-child(2) { animation-delay: 40ms; }
+.grid > *:nth-child(3) { animation-delay: 80ms; }
+.grid > *:nth-child(4) { animation-delay: 120ms; }
+.grid > *:nth-child(5) { animation-delay: 160ms; }
+.grid > *:nth-child(n + 6) { animation-delay: 200ms; }
 
 .rcard {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
+  background: var(--wp-card);
+  border: 1px solid var(--wp-line);
+  border-radius: var(--wp-r-lg);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  transition: transform 0.18s var(--wp-ease), box-shadow 0.18s var(--wp-ease), border-color 0.18s var(--wp-ease);
 }
+.rcard:hover { transform: translateY(-2px); box-shadow: var(--wp-shadow-1); border-color: var(--wp-line-strong); }
 .rcard .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .rcard .rname {
-  font-size: 14px; font-weight: 600; line-height: 1.3;
+  display: flex; align-items: center; gap: 2px;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rcard .rhost {
-  font-size: 11px; color: var(--muted); margin-top: 3px;
+  font-size: 13px; color: var(--wp-muted); margin-top: 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rcard .dates { display: grid; gap: 4px; font-size: 11px; }
+.rcard .dates { display: grid; gap: 6px; font-size: 13px; padding-top: 12px; border-top: 1px solid var(--wp-line); }
 .rcard .dline { display: flex; justify-content: space-between; gap: 10px; }
-.rcard .dline .dk { color: var(--muted); }
-.rcard .actions { display: flex; gap: 8px; }
-.rcard .actions button { width: auto; flex: 1; margin: 0; padding: 7px 10px; font-size: 12px; }
+.rcard .dline .dk { color: var(--wp-muted); }
+.rcard .dline > :last-child { font-family: var(--wp-mono); font-size: 12px; }
+.rcard .actions { display: flex; gap: 8px; margin-top: auto; }
+.rcard .actions button { width: auto; flex: 1; height: 38px; margin: 0; font-size: 13px; }
 
 .star {
-  background: none; border: none; cursor: pointer; padding: 0;
-  font-size: 17px; line-height: 1; width: auto; margin: 0; flex-shrink: 0;
+  width: 34px; height: 34px; margin: 0; padding: 0; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: none; border: 1px solid transparent; border-radius: 50%;
+  font-size: 17px; line-height: 1; color: var(--wp-ink);
 }
-.star:hover { filter: brightness(1.25); }
+.star:hover { background: var(--wp-surface); border-color: transparent; transform: scale(1.08); box-shadow: none; }
+.star:active { transform: scale(0.92); }
 
-.pager {
-  display: flex; align-items: center; justify-content: center;
-  gap: 14px; margin-top: 22px;
-}
-.pager button { width: auto; margin: 0; padding: 8px 16px; font-size: 12px; }
-.pager .page-info { font-size: 12px; color: var(--muted); }
+.pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 28px; }
+.pager button { width: auto; margin: 0; height: 38px; padding: 0 18px; font-size: 13px; }
+.pager .page-info { font-size: 13px; color: var(--wp-muted); font-family: var(--wp-mono); }
 
 .setting {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  cursor: pointer;
-  font-size: 13px;
-  margin: 0;
+  display: flex; align-items: flex-start; gap: 12px;
+  cursor: pointer; font-size: 15px; margin: 0;
+  padding: 16px 18px; background: var(--wp-card);
+  border: 1px solid var(--wp-line); border-radius: var(--wp-r-md);
+  transition: border-color 0.15s var(--wp-ease);
 }
+.setting:hover { border-color: var(--wp-line-strong); }
 .setting input[type='checkbox'] {
-  width: 17px;
-  height: 17px;
-  margin-top: 1px;
-  flex-shrink: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
+  width: 18px; height: 18px; margin: 2px 0 0; padding: 0; flex-shrink: 0;
+  accent-color: var(--wp-accent); cursor: pointer; box-shadow: none;
 }
 
 .dash-empty {
-  text-align: center; color: var(--muted); font-size: 13px;
-  padding: 44px 0; border: 1px dashed var(--border); border-radius: 10px;
+  text-align: center; color: var(--wp-muted); font-size: 15px;
+  padding: 56px 24px; border: 1px dashed var(--wp-line-strong); border-radius: var(--wp-r-lg);
+  animation: wp-rise 0.32s var(--wp-ease) both;
+}
+
+@media (max-width: 640px) {
+  body.dashboard #root { padding: 28px 16px 64px; }
+  .dash-head { flex-direction: column; align-items: flex-start; }
+  .dash-head h1 { font-size: 30px; }
+  .dash-tabs { display: flex; overflow-x: auto; max-width: 100%; }
 }
