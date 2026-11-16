@@ -45,8 +45,8 @@ import {
 
 // ===========================================================================
 // The background service worker owns everything realtime: the authenticated
-// Firebase session (shared with the popup), Firestore subscriptions, playback
-// writes and presence. The content script is pure DOM and talks to us over a
+// session (shared with the popup), SignalR subscriptions, playback writes and
+// presence. The content script is pure DOM and talks to us over a
 // long-lived port.
 // ===========================================================================
 
@@ -151,17 +151,13 @@ let presentMembers: Member[] = [];
 let presenceTimer: ReturnType<typeof setInterval> | undefined;
 
 /**
- * Recompute the watcher count from the cached snapshot using the estimated
- * server clock. Runs on a timer as well as on snapshots: if every member stops
- * heartbeating, no snapshot arrives, and without this the displayed count would
- * freeze at its last value indefinitely.
- */
-/**
- * Presence writes run here rather than in the content script. Chrome throttles
- * `setInterval` in hidden tabs to about once a minute after ~5 minutes, so a
- * viewer who switched tabs would go "stale", vanish from the watcher count, and
- * could even trigger a spurious ownership handoff. Service-worker timers aren't
- * subject to tab throttling.
+ * Server heartbeats run here rather than in the content script, because Chrome
+ * throttles the content script's `setInterval` in hidden tabs (about once a minute
+ * after ~5 minutes). Service-worker timers aren't throttled that way, but they only
+ * run while the worker is alive: Chrome stops an idle MV3 worker after ~30s, and the
+ * timer dies with it. Keep-alive comes from the content script's port messages and
+ * from SignalR traffic. If the worker is recycled, the next heartbeat after it wakes
+ * rejoins the room (`NotAMember` -> re-enter), so presence recovers but may flicker.
  */
 function startPresenceTimer() {
   stopPresenceTimer();
@@ -211,6 +207,12 @@ function stopPresenceTimer() {
   presenceTimer = undefined;
 }
 
+/**
+ * Recompute the watcher count from the cached snapshot using the estimated
+ * server clock. Runs on a timer as well as on snapshots: if every member stops
+ * heartbeating, no snapshot arrives, and without this the displayed count would
+ * freeze at its last value indefinitely.
+ */
 function recountWatchers() {
   const now = serverNow();
   const next = lastMembers.filter((m) => isFresh(m, now)).length;

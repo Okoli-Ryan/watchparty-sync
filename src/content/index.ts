@@ -15,7 +15,7 @@ import { VideoController } from './videoController';
 import { Widget } from './widget';
 
 // Pure-DOM content script. Talks to the background over a long-lived port; the
-// background owns all Firebase/Firestore work.
+// background owns all server (REST + SignalR) work.
 
 let port: chrome.runtime.Port | null = null;
 let controller: VideoController | null = null;
@@ -192,8 +192,12 @@ function handle(msg: BgToContent) {
 
 function startHeartbeat() {
   stopHeartbeat();
-  // Heartbeat over the port both drives Firestore presence (background writes
-  // the lastSeen) and keeps the MV3 service worker alive while we're attached.
+  // Heartbeat over the port carries the owner's playhead to the background and is
+  // the service worker's keep-alive while we're attached. It does NOT drive
+  // presence itself: the background's own timer posts the server heartbeat.
+  // Caveat: Chrome throttles this interval in hidden tabs (about once a minute
+  // after ~5 minutes), so in a backgrounded tab the worker may rely on its
+  // SignalR traffic to stay alive instead.
   heartbeatTimer = window.setInterval(() => {
     // The owner's playhead rides along; the background only reads it when this
     // frame is the attached one and we are the host.
