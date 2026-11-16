@@ -196,7 +196,7 @@ export class VideoController {
     log('content', `role change ${this.role} → ${role}`);
     this.role = role;
     // When promoted to owner, stop mirroring and publish our current state so
-    // Firestore reflects this player as the new source of truth.
+    // The room's playback state reflects this player as the new source of truth.
     if (role === 'owner') {
       this.hideJoinGate();
       this.unmuteChip?.remove();

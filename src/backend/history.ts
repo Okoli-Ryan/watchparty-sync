@@ -4,7 +4,7 @@ import type { RoomHistoryEntry } from '../shared/types';
 
 // The signed-in user's own room history and favourites. Every route is under
 // /me, so there is no way to address anyone else's: the server enforces what
-// the Firestore rules enforced per document.
+// the old Firestore security rules enforced per document.
 //
 // Attendance is no longer written from here. Joining a room records it on the
 // server, so it can be neither forgotten nor forged.

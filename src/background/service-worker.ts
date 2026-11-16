@@ -224,7 +224,7 @@ function recountWatchers() {
 
 /**
  * Latest decrypted chat, cached so it can be re-sent to a top frame that
- * connects *after* the Firestore snapshot arrived. Joining navigates the tab,
+ * connects *after* the chat snapshot arrived. Joining navigates the tab,
  * so the first snapshot routinely lands before the new page's content script
  * exists — without this replay the widget stayed empty until the next message
  * changed the collection.
@@ -459,8 +459,8 @@ function findFrame(tabId: number, origin: string): FrameConn | undefined {
 
 /**
  * The signed-in user, from the session the popup stored in extension storage.
- * Unlike Firebase Auth there is nothing to wait for: the token is either there
- * and unexpired, or the user is signed out.
+ * There is nothing to wait for: the token is either there and unexpired, or the
+ * user is signed out.
  */
 function getMe(): Promise<UserProfile | null> {
   return getMyProfile();
@@ -1016,7 +1016,7 @@ async function handleContentMessage(key: string, tabId: number, msg: ContentToBg
 
     case 'CHAT_SEND': {
       // Plaintext arrives from the page; it is encrypted here before it ever
-      // reaches Firestore.
+      // reaches the server.
       if (!session || session.tabId !== tabId) return;
       if (!chatKey) {
         warn('bg', 'chat send ignored — no key for this room');
@@ -1219,7 +1219,7 @@ async function onPickResult(tabId: number, msg: Extract<ContentToBg, { t: 'PICK_
 // --- popup requests --------------------------------------------------------
 
 ext.runtime.onMessage.addListener((msg: PopupRequest, _sender, sendResponse) => {
-  // The catch is not optional: without it an unexpected rejection (a Firestore
+  // The catch is not optional: without it an unexpected rejection (an API
   // read failing inside JOIN_ROOM, say) leaves the channel unanswered, the
   // popup's `await sendBg(...)` rejects un-caught, and its `setBusy(false)`
   // never runs — every button stays disabled with no error shown.

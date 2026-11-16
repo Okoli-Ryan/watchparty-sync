@@ -1,13 +1,13 @@
 // Message protocol between the three extension contexts.
 //
-//  • Popup (extension origin)  — interactive UI. Holds the Firebase session and
-//    does user/room CRUD directly. Talks to the background via one-shot
+//  • Popup (extension origin)  — interactive UI. Holds the signed-in session and
+//    does user/room CRUD directly over REST. Talks to the background via one-shot
 //    chrome.runtime.sendMessage.
 //  • Background service worker (extension origin) — owns the *realtime* work
-//    (onSnapshot, playback writes, presence heartbeat) so it survives the popup
-//    closing. Shares the Firebase auth session with the popup (same origin).
+//    (SignalR subscriptions, playback writes, presence heartbeat) so it survives the
+//    popup closing. Shares the auth session with the popup (same origin).
 //  • Content script (PAGE origin) — pure DOM: picker overlay + video control.
-//    Cannot see the extension's Firebase session, so it only exchanges DOM-level
+//    Cannot see the extension's session, so it only exchanges DOM-level
 //    messages with the background over a long-lived Port.
 
 import type { PlaybackState, MemberRole, ChatMessage } from './types';
@@ -20,7 +20,7 @@ export type PopupRequest =
   | { t: 'GET_PENDING_PICK' }
   | { t: 'CLEAR_PENDING_PICK' }
   // `passphrase` is only sent for private rooms; it is never persisted beyond
-  // chrome.storage.session and never written to Firestore.
+  // chrome.storage.session and never sent to the server.
   | { t: 'CREATE_ROOM_ATTACH'; roomId: string; passphrase?: string }
   // `newTab` is set when joining from the dashboard: the active tab there IS
   // the dashboard, so the room must open in a tab of its own.

@@ -1,16 +1,16 @@
 // AES-GCM message encryption for room chat, via WebCrypto.
 //
 // Each room gets a random 256-bit key at creation. Messages are encrypted
-// before they ever reach Firestore, so the stored documents contain ciphertext
-// only — a database export or a browse through the Firebase console shows
-// nothing readable.
+// before they ever reach the server, so the stored messages contain ciphertext
+// only — a database dump or a browse through the database shows nothing
+// readable.
 //
-// Threat model (be clear about this): the room key lives on the room document,
-// so anyone your security rules allow to READ the room can also decrypt its
-// chat. That means it protects message contents at rest and limits the blast
-// radius of a leaked `messages` collection — it is NOT end-to-end encryption
-// against your own Firebase project. See `deriveKeyFromPassphrase` for the
-// stronger variant where the key is never stored.
+// Threat model (be clear about this): the room key is stored on the room record,
+// so anyone the API lets READ the room can also decrypt its chat. That means it
+// protects message contents at rest and limits the blast radius of a leaked
+// messages table — it is NOT end-to-end encryption against whoever runs the
+// server. See `deriveKeyFromPassphrase` for the stronger variant where the key
+// is never stored.
 
 const ALGO = 'AES-GCM';
 const KEY_BITS = 256;

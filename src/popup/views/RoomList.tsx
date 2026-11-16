@@ -18,8 +18,8 @@ export function RoomList({ me: _me }: { me: UserProfile }) {
   const [prompting, setPrompting] = useState<string | null>(null);
   const [passInput, setPassInput] = useState('');
   const [passError, setPassError] = useState<string | null>(null);
-  // Re-evaluate liveness on a timer: a room can go stale with no Firestore
-  // write to trigger a re-render.
+  // Re-evaluate liveness on a timer: a room can go stale with no server
+  // push to trigger a re-render.
   const [, setTick] = useState(0);
 
   useEffect(() => {
