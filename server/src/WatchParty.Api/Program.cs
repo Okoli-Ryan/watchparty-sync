@@ -28,7 +28,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseCors(ApiServiceCollectionExtensions.CorsPolicy);
 app.UseRateLimiter();
@@ -45,7 +44,10 @@ var readinessChecks = new HealthCheckOptions { Predicate = healthCheck => health
 app.MapHealthChecks("/health/live", livenessOnly).AllowAnonymous();
 app.MapHealthChecks("/health/ready", readinessChecks).AllowAnonymous();
 
-var apiVersions = app.NewApiVersionSet()
+// Cheap uptime-monitor probe: no DB access, just proves the process is serving requests.
+app.MapMethods("/", [HttpMethods.Head], () => Results.Ok()).AllowAnonymous().ExcludeFromDescription();
+
+var apiVersions =app.NewApiVersionSet()
     .HasApiVersion(new ApiVersion(1, 0))
     .ReportApiVersions()
     .Build();
